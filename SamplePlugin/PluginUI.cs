@@ -1,5 +1,7 @@
-﻿using ImGuiNET;
+﻿using Dalamud.Game.Text;
+using ImGuiNET;
 using System;
+using System.Collections.Generic;
 using System.Numerics;
 
 namespace SamplePlugin
@@ -9,8 +11,6 @@ namespace SamplePlugin
     class PluginUI : IDisposable
     {
         private Configuration configuration;
-
-        private ImGuiScene.TextureWrap goatImage;
 
         // this extra bool exists for ImGui, since you can't ref a property
         private bool visible = false;
@@ -27,16 +27,24 @@ namespace SamplePlugin
             set { this.settingsVisible = value; }
         }
 
-        // passing in the image here just for simplicity
-        public PluginUI(Configuration configuration, ImGuiScene.TextureWrap goatImage)
+        private bool logConfirmMessage = false;
+        public bool LogConfirmMessage
+        {
+            get { return this.logConfirmMessage; }
+            set { this.logConfirmMessage = value; }
+        }
+
+        public string latestLogTime = "";
+
+        public ChatLog log;
+
+        public PluginUI(Configuration configuration)
         {
             this.configuration = configuration;
-            this.goatImage = goatImage;
         }
 
         public void Dispose()
         {
-            this.goatImage.Dispose();
         }
 
         public void Draw()
@@ -63,19 +71,23 @@ namespace SamplePlugin
             ImGui.SetNextWindowSizeConstraints(new Vector2(375, 330), new Vector2(float.MaxValue, float.MaxValue));
             if (ImGui.Begin("My Amazing Window", ref this.visible, ImGuiWindowFlags.NoScrollbar | ImGuiWindowFlags.NoScrollWithMouse))
             {
-                ImGui.Text($"The random config bool is {this.configuration.SomePropertyToBeSavedAndWithADefault}");
-
+          
                 if (ImGui.Button("Show Settings"))
                 {
                     SettingsVisible = true;
                 }
 
-                ImGui.Spacing();
+                if (ImGui.Button("Print Log"))
+                {
+                    latestLogTime = log.printLog();
+                    LogConfirmMessage = true;
+                }
 
-                ImGui.Text("Have a goat:");
-                ImGui.Indent(55);
-                ImGui.Image(this.goatImage.ImGuiHandle, new Vector2(this.goatImage.Width, this.goatImage.Height));
-                ImGui.Unindent(55);
+                if (LogConfirmMessage)
+                {
+                    ImGui.Text($"Log saved at {latestLogTime}");
+                }
+
             }
             ImGui.End();
         }
@@ -87,20 +99,39 @@ namespace SamplePlugin
                 return;
             }
 
-            ImGui.SetNextWindowSize(new Vector2(232, 75), ImGuiCond.Always);
-            if (ImGui.Begin("A Wonderful Configuration Window", ref this.settingsVisible,
-                ImGuiWindowFlags.NoResize | ImGuiWindowFlags.NoCollapse | ImGuiWindowFlags.NoScrollbar | ImGuiWindowFlags.NoScrollWithMouse))
+            ImGui.SetNextWindowSize(new Vector2(375, 330));
+            if (ImGui.Begin("XIV Logger Configuration", ref this.settingsVisible))
             {
-                // can't ref a property, so use a local copy
-                var configValue = this.configuration.SomePropertyToBeSavedAndWithADefault;
-                if (ImGui.Checkbox("Random Config Bool", ref configValue))
+                if (ImGui.Button("Print Log"))
                 {
-                    this.configuration.SomePropertyToBeSavedAndWithADefault = configValue;
-                    // can save immediately on change, if you don't want to provide a "Save and Close" button
-                    this.configuration.Save();
+                    latestLogTime = log.printLog();
+                    LogConfirmMessage = true;
                 }
+
+                if (LogConfirmMessage)
+                {
+                    ImGui.Text($"Log saved at {latestLogTime}");
+                }
+                else
+                {
+                    ImGui.Spacing();
+                }
+
+                ImGui.Spacing();
+
+                foreach (KeyValuePair<int, string> entry in configuration.PossibleChatTypes)
+                {
+                    bool enabled = configuration.EnabledChatTypes[entry.Key];
+                    if (ImGui.Checkbox($"{entry.Value}", ref enabled))
+                    {
+                        configuration.EnabledChatTypes[entry.Key] = enabled;
+                        this.configuration.Save();
+                    }
+                }
+
             }
             ImGui.End();
         }
+
     }
 }
