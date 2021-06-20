@@ -1,10 +1,9 @@
 ﻿using Dalamud.Configuration;
 using Dalamud.Game.Text;
-using Dalamud.Game.Text.SeStringHandling;
 using Dalamud.Plugin;
 using System;
 using System.Collections.Generic;
-using System.IO;
+using System.Text;
 
 namespace XIVLogger
 {
@@ -103,14 +102,16 @@ namespace XIVLogger
     {
         private List<ChatMessage> log;
         private Dictionary<int, bool> chatConfig;
+        private DalamudPluginInterface pi;
 
         public List<ChatMessage> Log { get => log; }
         public Dictionary<int, bool> ChatConfig { get => chatConfig; set => chatConfig = value; }
 
-        public ChatLog(Dictionary<int, bool> chatConfig)
+        public ChatLog(Dictionary<int, bool> chatConfig, DalamudPluginInterface pI)
         {
             log = new List<ChatMessage>();
             ChatConfig = chatConfig;
+            pi = pI;
         }
 
         public void addMessage(XivChatType type, string sender, string message)
@@ -219,6 +220,12 @@ namespace XIVLogger
                     }
                 }
             }
+
+            this.pi.Framework.Gui.Chat.PrintChat(new XivChatEntry
+            {
+                MessageBytes = Encoding.UTF8.GetBytes($"Chat log saved at {name}."),
+                Type = XivChatType.Echo
+            });
 
             return name;
         }
