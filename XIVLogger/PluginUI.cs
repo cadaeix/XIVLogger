@@ -4,7 +4,7 @@ using System;
 using System.Collections.Generic;
 using System.Numerics;
 
-namespace SamplePlugin
+namespace XIVLogger
 {
     // It is good to have this be disposable in general, in case you ever need it
     // to do any cleanup
@@ -127,6 +127,7 @@ namespace SamplePlugin
                         configuration.EnabledChatTypes[entry.Key] = enabled;
                         this.configuration.Save();
                     }
+
                 }
 
             }

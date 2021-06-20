@@ -7,12 +7,12 @@ using System.Collections.Generic;
 using System.IO;
 using System.Reflection;
 
-namespace SamplePlugin
+namespace XIVLogger
 {
 
     public class Plugin : IDalamudPlugin
     {
-        public string Name => "My Cool Plugin";
+        public string Name => "XIVLogger";
 
         private const string commandName = "/xivlogger";
 
