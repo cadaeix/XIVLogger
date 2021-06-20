@@ -28,3 +28,4 @@ Say, Shout, Yell, Party/CrossParty, Alliance, Tells, Emotes (Custom, Standard), 
 * Adding commands to save all messages from a specified time
 * Adding commands to save the last <i>n</i> amount of messages
 * Load chat log into copy and paste?
+* I'd love a way to save logs based on chat tab configurations, but I have no idea how to do this
