@@ -23,7 +23,9 @@ Say, Shout, Yell, Party/CrossParty, Alliance, Tells, Emotes (Custom, Standard), 
 
 * <strike>Actual documentation and help text</strike>
 * <strike>Slash commands</strike> some commands exist now
-* Specify a filepath to save to, instead of assuming a Documents folder exists
+* <strike>Specify a filepath to save to, instead of assuming a Documents folder exists</strike>
+    * Filepath validation mostly works, will crash when saving to non-existing folders, defaults to documents folder if empty
+* Specify names for text files
 * Turning on and off categories of chat texts, like all linkshells
 * Saving combinations of different chat types and naming them?
 * Do the chat settings actually persist?
