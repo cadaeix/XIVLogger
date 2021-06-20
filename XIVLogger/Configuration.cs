@@ -3,6 +3,7 @@ using Dalamud.Game.Text;
 using Dalamud.Plugin;
 using System;
 using System.Collections.Generic;
+using System.IO;
 using System.Text;
 
 namespace XIVLogger
@@ -15,6 +16,8 @@ namespace XIVLogger
         public Dictionary<int, Boolean> EnabledChatTypes;
 
         public Dictionary<int, string> PossibleChatTypes;
+
+        public string fileName = string.Empty;
 
         [NonSerialized]
         private DalamudPluginInterface pluginInterface;
@@ -103,15 +106,17 @@ namespace XIVLogger
         private List<ChatMessage> log;
         private Dictionary<int, bool> chatConfig;
         private DalamudPluginInterface pi;
+        private Configuration config;
 
         public List<ChatMessage> Log { get => log; }
         public Dictionary<int, bool> ChatConfig { get => chatConfig; set => chatConfig = value; }
 
-        public ChatLog(Dictionary<int, bool> chatConfig, DalamudPluginInterface pI)
+        public ChatLog(Configuration aConfig, DalamudPluginInterface aPi)
         {
             log = new List<ChatMessage>();
-            ChatConfig = chatConfig;
-            pi = pI;
+            ChatConfig = aConfig.EnabledChatTypes;
+            config = aConfig;
+            pi = aPi;
         }
 
         public void addMessage(XivChatType type, string sender, string message)
@@ -124,11 +129,29 @@ namespace XIVLogger
             return DateTime.Now.ToString("dd-MM-yyyy_hh.mm.ss");
         }
 
+        private bool checkValidPath(string path)
+        {
+            if (String.IsNullOrEmpty(path)) { return false; }
+
+            return Path.IsPathRooted(path);
+        }
+
         public string printLog()
         {
             string name = getTimeStamp();
 
-            string path = Environment.GetFolderPath(Environment.SpecialFolder.MyDocuments) + @"\" + name + ".txt";
+            string folder;
+
+            if (!checkValidPath(config.fileName))
+            {
+                folder = Environment.GetFolderPath(Environment.SpecialFolder.MyDocuments);
+            }
+            else
+            {
+                folder = config.fileName;
+            }
+
+            string path = folder + @"\" + name + ".txt";
 
             using (System.IO.StreamWriter file = new System.IO.StreamWriter(path, true))
             {
@@ -152,7 +175,7 @@ namespace XIVLogger
                                 text = message.Sender + " >> " + message.Message;
                                 break;
                             case XivChatType.TellOutgoing:
-                                text = ">>" + message.Sender + " : " + message.Message;
+                                text = ">> " + message.Sender + ": " + message.Message;
                                 break;
                             case XivChatType.FreeCompany:
                                 text = "[FC]" + message.Sender + ": " + message.Message;

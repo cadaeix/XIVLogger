@@ -40,7 +40,7 @@ namespace XIVLogger
                 HelpMessage = "Saves a chat log to your documents with the current settings"
             });
 
-            this.log = new ChatLog(configuration.EnabledChatTypes, pi);
+            this.log = new ChatLog(configuration, pi);
             this.ui.log = log;
 
             this.pi.UiBuilder.OnBuildUi += DrawUI;
