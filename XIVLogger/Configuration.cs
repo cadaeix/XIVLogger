@@ -129,11 +129,16 @@ namespace XIVLogger
             return DateTime.Now.ToString("dd-MM-yyyy_hh.mm.ss");
         }
 
-        private bool checkValidPath(string path)
+        public bool checkValidPath(string path)
         {
             if (String.IsNullOrEmpty(path)) { return false; }
 
-            return Path.IsPathRooted(path);
+            if (Path.IsPathRooted(path))
+            {
+                return Directory.Exists(path);
+            }
+
+            return false;
         }
 
         public string printLog()
