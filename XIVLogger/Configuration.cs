@@ -6,20 +6,16 @@ using System;
 using System.Collections.Generic;
 using System.IO;
 
-namespace SamplePlugin
+namespace XIVLogger
 {
     [Serializable]
     public class Configuration : IPluginConfiguration
     {
         public int Version { get; set; } = 0;
 
-        public bool SomePropertyToBeSavedAndWithADefault { get; set; } = true;
-
         public Dictionary<int, Boolean> EnabledChatTypes;
 
         public Dictionary<int, string> PossibleChatTypes;
-
-        // the below exist just to make saving less cumbersome
 
         [NonSerialized]
         private DalamudPluginInterface pluginInterface;
@@ -124,7 +120,7 @@ namespace SamplePlugin
 
         private string getTimeStamp()
         {
-            return DateTime.Now.ToString("hhmmss dd-MM-yyyy");
+            return DateTime.Now.ToString("dd-MM-yyyy_hh.mm.ss");
         }
 
         public string printLog()
