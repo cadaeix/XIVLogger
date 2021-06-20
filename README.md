@@ -1,40 +1,20 @@
-# SamplePlugin
-Simple example plugin for XivLauncher/Dalamud, that shows both a working plugin and an associated UI test project, to allow for building and tweaking the UI without having to run the game.
+# XIVLogger
 
-This is not designed to be the simplest possible example, but neither is it designed to cover everything you might want to do.
+Very much a work in progress plugin for XIVLauncher!
 
-I'm mostly hoping this helps some people to build out their UIs without having to constantly jump in and out of game.
+A simple chat log plugin that logs chat messages from when the plugin is turned on, and then dumps it to a text file in your documents at a press of a button.
 
+Primarily intended for saving roleplay logs.
 
-### Main Points
-* Simple functional plugin
-  * Slash command
-  * Main UI
-  * Settings UI
-  * Image loading
-  * Plugin json
-* Simple, slightly-improved plugin configuration handling
-* Basic ImGui testbed application project
-  * Allows testing UI changes without needing to run the game
-  * UI environment provided should match what is seen in game
-  * Defaults to an invisible fullscreen overlay; can easily be changed to use an opaque window etc
-  * Currently relies more on copy/paste of your UI code than fully generic objects (though this could be done)
-* Project organization
-  * Copies all necessary plugin files to the output directory
-    * Does not copy dependencies that are provided by dalamud
-    * Output directory can be zipped directly and have exactly what is required
-  * Hides data files from visual studio to reduce clutter
-    * Also allows having data files in different paths than VS would usually allow if done in the IDE directly
-    
-  
-  The intention is less that any of this is used directly in other projects, and more to show how similar things can be done.
-  
-  The UIDev project could be used as-is, with just the UITest.cs file needing to be redone for your specific project UI.
-  
-  ### To Use
-  You'll need to fixup the library dependencies (for both projects), to point at your local dalamud binary directory.
-  
-  This will either be a custom dalamud build, or `%APPDATA%\XivLauncher\addon\Hooks\` for the current live release.
-  
-  After that, clear out what you don't need in UITest.cs, and implement your own local UI under Draw()
-  
+## To Do
+
+* Actual documentation and help text
+* Slash commands
+* Specify a filepath to save to, instead of assuming a Documents folder exists
+* Turning on and off categories of chat texts, like all linkshells
+* Saving combinations of different chat types and naming them?
+* Do the chat settings actually persist?
+* Timestamps
+* Adding commands to save all messages from a specified time
+* Load chat log into copy and paste?
+* Experimental option to automatically filter out OOC brackets for roleplay purposes? (probably not, boo regex)
