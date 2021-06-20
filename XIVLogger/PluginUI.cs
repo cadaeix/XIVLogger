@@ -119,6 +119,12 @@ namespace XIVLogger
 
                 ImGui.Spacing();
 
+                ImGui.Text("File Path:");
+                ImGui.SameLine();
+                ImGui.InputText("##filename", ref configuration.fileName, 32);
+                ImGui.Text("Default: Documents folder");
+                ImGui.Spacing();
+
                 foreach (KeyValuePair<int, string> entry in configuration.PossibleChatTypes)
                 {
                     bool enabled = configuration.EnabledChatTypes[entry.Key];
