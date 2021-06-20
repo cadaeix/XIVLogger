@@ -6,6 +6,7 @@ using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Reflection;
+using System.Text;
 
 namespace XIVLogger
 {
@@ -31,12 +32,16 @@ namespace XIVLogger
             this.configuration = this.pi.GetPluginConfig() as Configuration ?? new Configuration();
             this.configuration.Initialize(this.pi);
 
-            // you might normally want to embed resources and load them from the manifest stream
             this.ui = new PluginUI(this.configuration);
 
             this.pi.CommandManager.AddHandler(commandName, new CommandInfo(OnCommand)
             {
-                HelpMessage = "hello world"
+                HelpMessage = "Opens settings window for XIVLogger"
+            });
+
+            this.pi.CommandManager.AddHandler("/savelog", new CommandInfo(OnSaveCommand)
+            {
+                HelpMessage = "Saves a chat log to your documents with the current settings"
             });
 
             this.log = new ChatLog(configuration.EnabledChatTypes);
@@ -47,8 +52,8 @@ namespace XIVLogger
 
             this.pi.Framework.Gui.Chat.OnChatMessage += OnChatMessage;
 
-
         }
+
         private void OnChatMessage(XivChatType type, uint id, ref SeString sender, ref SeString message, ref bool handled)
         {
             log.addMessage(type, sender.TextValue, message.TextValue);
@@ -60,6 +65,7 @@ namespace XIVLogger
         {
 
             this.pi.CommandManager.RemoveHandler(commandName);
+            this.pi.CommandManager.RemoveHandler("/savelog");
             this.pi.Dispose();
 
             this.pi.Framework.Gui.Chat.OnChatMessage -= OnChatMessage;
@@ -67,8 +73,20 @@ namespace XIVLogger
 
         private void OnCommand(string command, string args)
         {
-            this.ui.SettingsVisible = true; 
+            this.ui.SettingsVisible = true;
         }
+
+        private void OnSaveCommand(string command, string args)
+        {
+            log.printLog();
+
+            this.pi.Framework.Gui.Chat.PrintChat(new XivChatEntry
+            {
+                MessageBytes = Encoding.UTF8.GetBytes($"Chat log saved at {DateTime.Now.ToString("hh:mm")}."),
+                Type = XivChatType.Echo
+            }); 
+        }
+
 
         private void DrawUI()
         {

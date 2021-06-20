@@ -137,7 +137,7 @@ namespace XIVLogger
                 {
                     if (ChatConfig.ContainsKey((int)message.Type) && ChatConfig[(int)message.Type])
                     {
-                        string text = "";
+                        string text;
 
                         switch (message.Type)
                         {
