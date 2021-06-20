@@ -1,7 +1,7 @@
 {
-  "Author": "your name here",
+  "Author": "Cadaeix",
   "Name": "XIVLogger",
-  "Description": "A simple description that shows up in /xlplugins.  List any major slash-command(s).",
+  "Description": "Save chat logs as text files from when this is loaded. /xivlogger for settings, /savelog to save logs.",
   "InternalName": "XIVLogger",
   "AssemblyVersion": "1.0.0.0",
   "RepoUrl": "https://github.com/cadaeix/XIVLogger",
