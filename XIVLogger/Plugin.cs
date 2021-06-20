@@ -2,11 +2,7 @@
 using Dalamud.Game.Text;
 using Dalamud.Game.Text.SeStringHandling;
 using Dalamud.Plugin;
-using System;
-using System.Collections.Generic;
-using System.IO;
 using System.Reflection;
-using System.Text;
 
 namespace XIVLogger
 {
@@ -44,7 +40,7 @@ namespace XIVLogger
                 HelpMessage = "Saves a chat log to your documents with the current settings"
             });
 
-            this.log = new ChatLog(configuration.EnabledChatTypes);
+            this.log = new ChatLog(configuration.EnabledChatTypes, pi);
             this.ui.log = log;
 
             this.pi.UiBuilder.OnBuildUi += DrawUI;
@@ -79,12 +75,6 @@ namespace XIVLogger
         private void OnSaveCommand(string command, string args)
         {
             log.printLog();
-
-            this.pi.Framework.Gui.Chat.PrintChat(new XivChatEntry
-            {
-                MessageBytes = Encoding.UTF8.GetBytes($"Chat log saved at {DateTime.Now.ToString("hh:mm")}."),
-                Type = XivChatType.Echo
-            }); 
         }
 
 
