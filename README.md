@@ -1,5 +1,7 @@
 # XIVLogger
 
+NOTE: Logs are saved from when this plugin is activated
+
 Very much a work in progress plugin for XIVLauncher!
 
 A simple chat log plugin that logs chat messages from when the plugin is turned on, and then dumps it to a text file in your documents at a press of a button.
@@ -13,13 +15,14 @@ Say, Shout, Yell, Party/CrossParty, Alliance, Tells, Emotes (Custom, Standard), 
 
 ## Commands
 
-``/xivlogger`` to bring up settings plus button
-``/savelog`` to save the log from when the plugin is activated
+* ``/xivlogger`` to bring up settings plus save log button
+
+* ``/savelog`` to save the log from when the plugin is activated
 
 ## To Do
 
-* Actual documentation and help text
-* <strike>Slash commands</strike>
+* <strike>Actual documentation and help text</strike>
+* <strike>Slash commands</strike> some commands exist now
 * Specify a filepath to save to, instead of assuming a Documents folder exists
 * Turning on and off categories of chat texts, like all linkshells
 * Saving combinations of different chat types and naming them?
