@@ -6,6 +6,6 @@
   "AssemblyVersion": "1.0.0.0",
   "RepoUrl": "https://github.com/cadaeix/XIVLogger",
   "ApplicableVersion": "any",
-  "Tags": ["xivlauncer", "plugin", "chat", "chat log"],
-  "DalamudApiLevel": 2
+  "Tags": ["xivlauncher", "plugin", "chat", "chat log"],
+  "DalamudApiLevel": 3
 }
