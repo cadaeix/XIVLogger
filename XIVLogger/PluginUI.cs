@@ -34,6 +34,14 @@ namespace XIVLogger
             set { this.logConfirmMessage = value; }
         }
 
+        private bool copyConfirmMessage = false;
+        public bool CopyConfirmMessage
+        {
+            get { return this.copyConfirmMessage; }
+            set { this.copyConfirmMessage = value; }
+        }
+
+
         public string latestLogTime = "";
 
         public ChatLog log;
@@ -79,7 +87,7 @@ namespace XIVLogger
 
                 if (ImGui.Button("Print Log"))
                 {
-                    latestLogTime = log.printLog();
+                    latestLogTime = log.printLog("");
                     LogConfirmMessage = true;
                 }
 
@@ -100,44 +108,93 @@ namespace XIVLogger
             }
 
             ImGui.SetNextWindowSize(new Vector2(375, 330));
+
             if (ImGui.Begin("XIV Logger Configuration", ref this.settingsVisible))
             {
-                if (ImGui.Button("Print Log"))
+
+                if (ImGui.Button("Save Log"))
                 {
-                    latestLogTime = log.printLog();
+                    latestLogTime = log.printLog("");
                     LogConfirmMessage = true;
+                    CopyConfirmMessage = false;
+                }
+
+                ImGui.SameLine();
+
+                if (ImGui.Button("Copy Log To Clipboard"))
+                {
+                    string clip = log.printLog("", aClipboard: true);
+                    ImGui.SetClipboardText(clip);
+                    CopyConfirmMessage = true;
+                    LogConfirmMessage = false;
                 }
 
                 if (LogConfirmMessage)
                 {
                     ImGui.Text($"Log saved at {latestLogTime}");
                 }
+                else if (CopyConfirmMessage)
+                {
+                    ImGui.Text($"Log copied to clipboard");
+                }
                 else
                 {
                     ImGui.Spacing();
                 }
 
-                ImGui.Spacing();
+                ImGui.Separator();
 
-                ImGui.Text("File Path:");
-                ImGui.SameLine();
-                ImGui.InputText("##filename", ref configuration.fileName, 32);
-                ImGui.Text("Default: Documents folder");
-                ImGui.Spacing();
-
-                foreach (KeyValuePair<int, string> entry in configuration.PossibleChatTypes)
+                if (ImGui.BeginTabBar("##logger tabs"))
                 {
-                    bool enabled = configuration.EnabledChatTypes[entry.Key];
-                    if (ImGui.Checkbox($"{entry.Value}", ref enabled))
+
+                    if (ImGui.BeginTabItem("Config"))
                     {
-                        configuration.EnabledChatTypes[entry.Key] = enabled;
-                        this.configuration.Save();
+                        firstTab();
+                        ImGui.EndTabItem();
                     }
 
+                    if (ImGui.BeginTabItem("Chat Types"))
+                    {
+
+                        foreach (KeyValuePair<int, string> entry in configuration.PossibleChatTypes)
+                        {
+                            bool enabled = configuration.EnabledChatTypes[entry.Key];
+                            if (ImGui.Checkbox($"{entry.Value}", ref enabled))
+                            {
+                                configuration.EnabledChatTypes[entry.Key] = enabled;
+                                this.configuration.Save();
+                            }
+
+                        }
+                        ImGui.EndTabItem();
+                    }
+
+                    ImGui.EndTabBar();
                 }
 
             }
             ImGui.End();
+        }
+
+        private void firstTab()
+        {
+            ImGui.Spacing();
+
+            ImGui.Text("File Name:");
+            ImGui.SameLine();
+            ImGui.InputText("##filename", ref configuration.fileName, 256);
+            ImGui.Spacing();
+
+            ImGui.Text("File Path:");
+            ImGui.SameLine();
+            ImGui.InputText("##filepath", ref configuration.filePath, 256);
+            ImGui.Text("Default: Documents folder");
+            ImGui.Spacing();
+
+            if (ImGui.Checkbox("Include Timestamp", ref configuration.fTimestamp))
+            {
+                this.configuration.Save();
+            }
         }
 
     }

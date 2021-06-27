@@ -2,7 +2,10 @@
 using Dalamud.Game.Text;
 using Dalamud.Game.Text.SeStringHandling;
 using Dalamud.Plugin;
+using System;
 using System.Reflection;
+using ImGuiNET;
+using System.Text;
 
 namespace XIVLogger
 {
@@ -37,7 +40,12 @@ namespace XIVLogger
 
             this.pi.CommandManager.AddHandler("/savelog", new CommandInfo(OnSaveCommand)
             {
-                HelpMessage = "Saves a chat log to your documents with the current settings"
+                HelpMessage = "Saves a chat log as a text file with the current settings, /savelog <number> to save the last <number> messages"
+            });
+
+            this.pi.CommandManager.AddHandler("/copylog", new CommandInfo(OnCopyCommand)
+            {
+                HelpMessage = "Copies a chat log to your clipboard with the current settings, /copylog <number> to copy the last <number> messages"
             });
 
             this.log = new ChatLog(configuration, pi);
@@ -62,6 +70,7 @@ namespace XIVLogger
 
             this.pi.CommandManager.RemoveHandler(commandName);
             this.pi.CommandManager.RemoveHandler("/savelog");
+            this.pi.CommandManager.RemoveHandler("/copylog");
             this.pi.Dispose();
 
             this.pi.Framework.Gui.Chat.OnChatMessage -= OnChatMessage;
@@ -74,7 +83,12 @@ namespace XIVLogger
 
         private void OnSaveCommand(string command, string args)
         {
-            log.printLog();
+            log.printLog(args);
+        }
+
+        private void OnCopyCommand (string command, string args)
+        {
+            ImGui.SetClipboardText(log.printLog(args, aClipboard: true));
         }
 
 
