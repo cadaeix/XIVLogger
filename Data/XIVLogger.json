@@ -1,9 +1,9 @@
 {
   "Author": "Cadaeix",
   "Name": "XIVLogger",
-  "Description": "Save chat logs as text files from when this is loaded. /xivlogger for settings, /savelog to save logs.",
+  "Description": "Save chat logs as text files from when this is loaded. /xivlogger for settings, /savelog to save logs, /copylogs to copy logs.",
   "InternalName": "XIVLogger",
-  "AssemblyVersion": "1.0.0.0",
+  "AssemblyVersion": "1.0.1.0",
   "RepoUrl": "https://github.com/cadaeix/XIVLogger",
   "ApplicableVersion": "any",
   "Tags": ["xivlauncher", "plugin", "chat", "chat log"],
