@@ -2,7 +2,7 @@
 
 NOTE: Logs are saved from when this plugin is activated
 
-Very much a work in progress plugin for XIVLauncher!
+Very much a work in progress plugin for [XIVQuickLauncher](https://github.com/goatcorp/FFXIVQuickLauncher). 
 
 A simple chat log plugin that logs chat messages from when the plugin is turned on, and then dumps it to a text file in your documents at a press of a button. Now supports copying!
 
@@ -31,9 +31,13 @@ Say, Shout, Yell, Party/CrossParty, Alliance, Tells, Emotes (Custom, Standard), 
 * <strike>Specify names for text files</strike>
 * Turning on and off categories of chat texts, like all linkshells
 * Saving combinations of different chat types and naming them?
+    * Allow this to be used with the slash command, to quickly save logs based on differen combinations
+    * I'd love a way to save logs based on chat tab configurations, but this seems much easier said than done
 * Do the chat settings actually persist?
 * <strike>Timestamps</strike>
-* Adding commands to save all messages from a specified time
+    * Adding commands to save all messages from a specified time
 * <strike>Adding commands to save the last <i>n</i> amount of messages</strike>
 * <strike>Load chat log into copy and paste?</strike>
-* I'd love a way to save logs based on chat tab configurations, but I have no idea how to do this
+* Name replacer, specify a character and a name to replace
+* Consolidate slash commands into a single slash command with multiple arguments, like ``/xivlogger savelog 2`` to save the last 2 messages
+* Automated logging, save log every <i>n</i> minutes, and on exit
