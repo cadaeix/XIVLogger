@@ -5,6 +5,7 @@ using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Text;
+using System.Linq;
 
 namespace XIVLogger
 {
@@ -17,7 +18,11 @@ namespace XIVLogger
 
         public Dictionary<int, string> PossibleChatTypes;
 
+        public string filePath = string.Empty;
+
         public string fileName = string.Empty;
+
+        public bool fTimestamp = false;
 
         [NonSerialized]
         private DalamudPluginInterface pluginInterface;
@@ -56,7 +61,10 @@ namespace XIVLogger
                     { (int) XivChatType.Ls8, "Linkshell 8" },
                     { (int) XivChatType.PvPTeam, "PVP Team" },
                     { (int) XivChatType.NoviceNetwork, "Novice Network" },
-                    { (int) XivChatType.FreeCompany, "Free Company" }
+                    { (int) XivChatType.FreeCompany, "Free Company" },
+                    { (int) XivChatType.Echo, "Echo (Some System Messages)" },
+                    { (int) XivChatType.SystemMessage, "System Messages" },
+                    { (int) XivChatType.SystemError, "System Error" },
                 };
 
             EnabledChatTypes = new Dictionary<int, bool>
@@ -90,8 +98,10 @@ namespace XIVLogger
                     { (int) XivChatType.PvPTeam, false },
                     { (int) XivChatType.NoviceNetwork, false },
                     { (int) XivChatType.FreeCompany, false },
+                    { (int) XivChatType.Echo, false },
+                    { (int) XivChatType.SystemMessage, false },
+                    { (int) XivChatType.SystemError, false },
                 };
-
         }
 
         public void Save()
@@ -103,7 +113,7 @@ namespace XIVLogger
 
     public class ChatLog
     {
-        private List<ChatMessage> log;
+        private readonly List<ChatMessage> log;
         private Dictionary<int, bool> chatConfig;
         private DalamudPluginInterface pi;
         private Configuration config;
@@ -141,123 +151,219 @@ namespace XIVLogger
             return false;
         }
 
-        public string printLog()
+        public string replaceInvalidChars(string filename)
         {
-            string name = getTimeStamp();
+            return string.Join("_", filename.Split(Path.GetInvalidFileNameChars()));
+        }
 
-            string folder;
+        public string printLog(string args, bool aClipboard = false)
+        {
+            List<String> printedLog;
 
-            if (!checkValidPath(config.fileName))
+            int lastN = 0;
+
+            if (!string.IsNullOrEmpty(args))
             {
-                folder = Environment.GetFolderPath(Environment.SpecialFolder.MyDocuments);
+                Int32.TryParse(args, out lastN);
+            }
+
+            printedLog = prepareLog(aLastN: lastN, aTimestamp: config.fTimestamp);
+
+            if (aClipboard)
+            {
+                string clip = String.Empty;
+
+                foreach (string message in printedLog)
+                {
+                    clip += message;
+                    clip += Environment.NewLine;
+                }
+
+                if (lastN > 0)
+                {
+                    this.pi.Framework.Gui.Chat.PrintChat(new XivChatEntry
+                    {
+                        MessageBytes = Encoding.UTF8.GetBytes($"Last {lastN} messages copied to clipboard."),
+                        Type = XivChatType.Echo
+                    });
+                }
+                else
+                {
+                    this.pi.Framework.Gui.Chat.PrintChat(new XivChatEntry
+                    {
+                        MessageBytes = Encoding.UTF8.GetBytes($"Chat log copied to clipboard."),
+                        Type = XivChatType.Echo
+                    });
+                }
+
+                return clip;
             }
             else
             {
-                folder = config.fileName;
-            }
+                string name = getTimeStamp();
 
-            string path = folder + @"\" + name + ".txt";
+                string folder;
 
-            using (System.IO.StreamWriter file = new System.IO.StreamWriter(path, true))
-            {
-                file.WriteLine(name + "\n");
-
-                foreach (ChatMessage message in Log)
+                if (!checkValidPath(config.filePath))
                 {
-                    if (ChatConfig.ContainsKey((int)message.Type) && ChatConfig[(int)message.Type])
+                    folder = Environment.GetFolderPath(Environment.SpecialFolder.MyDocuments);
+                }
+                else
+                {
+                    folder = config.filePath;
+                }
+
+                if (!string.IsNullOrEmpty(config.fileName) && !string.IsNullOrWhiteSpace(config.fileName))
+                {
+                    name = replaceInvalidChars(config.fileName);
+                }
+
+                string path = folder + @"\" + name + ".txt";
+
+                int count = 0;
+
+                while (File.Exists(path))
+                {
+                    count++;
+                    path = folder + @"\" + name + count + ".txt";
+
+                }
+
+                using (System.IO.StreamWriter file = new System.IO.StreamWriter(path, true))
+                {
+                    file.WriteLine(name + "\n");
+
+                    foreach (string message in printedLog)
                     {
-                        string text;
-
-                        switch (message.Type)
-                        {
-                            case XivChatType.CustomEmote:
-                                text = message.Sender + message.Message;
-                                break;
-                            case XivChatType.StandardEmote:
-                                text = message.Message;
-                                break;
-                            case XivChatType.TellIncoming:
-                                text = message.Sender + " >> " + message.Message;
-                                break;
-                            case XivChatType.TellOutgoing:
-                                text = ">> " + message.Sender + ": " + message.Message;
-                                break;
-                            case XivChatType.FreeCompany:
-                                text = "[FC]" + message.Sender + ": " + message.Message;
-                                break;
-                            case XivChatType.NoviceNetwork:
-                                text = "[NN]" + message.Sender + ": " + message.Message;
-                                break;
-                            case XivChatType.CrossLinkShell1:
-                                text = "[CWLS1]" + message.Sender + ": " + message.Message;
-                                break;
-                            case XivChatType.CrossLinkShell2:
-                                text = "[CWLS2]" + message.Sender + ": " + message.Message;
-                                break;
-                            case XivChatType.CrossLinkShell3:
-                                text = "[CWLS3]" + message.Sender + ": " + message.Message;
-                                break;
-                            case XivChatType.CrossLinkShell4:
-                                text = "[CWLS4]" + message.Sender + ": " + message.Message;
-                                break;
-                            case XivChatType.CrossLinkShell5:
-                                text = "[CWLS5]" + message.Sender + ": " + message.Message;
-                                break;
-                            case XivChatType.CrossLinkShell6:
-                                text = "[CWLS6]" + message.Sender + ": " + message.Message;
-                                break;
-                            case XivChatType.CrossLinkShell7:
-                                text = "[CWLS7]" + message.Sender + ": " + message.Message;
-                                break;
-                            case XivChatType.CrossLinkShell8:
-                                text = "[CWLS8]" + message.Sender + ": " + message.Message;
-                                break;
-                            case XivChatType.Ls1:
-                                text = "[LS1]" + message.Sender + ": " + message.Message;
-                                break;
-                            case XivChatType.Ls2:
-                                text = "[LS2]" + message.Sender + ": " + message.Message;
-                                break;
-                            case XivChatType.Ls3:
-                                text = "[LS3]" + message.Sender + ": " + message.Message;
-                                break;
-                            case XivChatType.Ls4:
-                                text = "[LS4]" + message.Sender + ": " + message.Message;
-                                break;
-                            case XivChatType.Ls5:
-                                text = "[LS5]" + message.Sender + ": " + message.Message;
-                                break;
-                            case XivChatType.Ls6:
-                                text = "[LS6]" + message.Sender + ": " + message.Message;
-                                break;
-                            case XivChatType.Ls7:
-                                text = "[LS7]" + message.Sender + ": " + message.Message;
-                                break;
-                            case XivChatType.Ls8:
-                                text = "[LS8]" + message.Sender + ": " + message.Message;
-                                break;
-                            case XivChatType.PvPTeam:
-                                text = "[PvP]" + message.Sender + ": " + message.Message;
-                                break;
-                            default:
-                                text = message.Sender + ": " + message.Message;
-                                break;
-                        }
-
-                        file.WriteLine(text);
+                        file.WriteLine(message);
                     }
+
+                }
+
+                if (lastN > 0)
+                {
+                    this.pi.Framework.Gui.Chat.PrintChat(new XivChatEntry
+                    {
+                        MessageBytes = Encoding.UTF8.GetBytes($"Last {lastN} messages saved at {path}."),
+                        Type = XivChatType.Echo
+                    });
+                }
+                else
+                {
+                    this.pi.Framework.Gui.Chat.PrintChat(new XivChatEntry
+                    {
+                        MessageBytes = Encoding.UTF8.GetBytes($"Chat log saved at {path}."),
+                        Type = XivChatType.Echo
+                    });
+                }
+
+                return path;
+            }
+  
+        }
+
+        private List<string> prepareLog(int aLastN = 0, bool aTimestamp = false)
+        {
+            List<string> result = new List<string>();
+
+            foreach (ChatMessage message in Log)
+            {
+                if (ChatConfig.ContainsKey((int)message.Type) && ChatConfig[(int)message.Type])
+                {
+                    string text = String.Empty;
+
+                    if (aTimestamp)
+                    {
+                        text += $"[{message.Timestamp:t}] ";
+                    }
+
+                    switch (message.Type)
+                    {
+                        case XivChatType.CustomEmote:
+                            text += message.Sender + message.Message;
+                            break;
+                        case XivChatType.StandardEmote:
+                            text += message.Message;
+                            break;
+                        case XivChatType.TellIncoming:
+                            text += message.Sender + " >> " + message.Message;
+                            break;
+                        case XivChatType.TellOutgoing:
+                            text += ">> " + message.Sender + ": " + message.Message;
+                            break;
+                        case XivChatType.FreeCompany:
+                            text += "[FC]" + message.Sender + ": " + message.Message;
+                            break;
+                        case XivChatType.NoviceNetwork:
+                            text += "[NN]" + message.Sender + ": " + message.Message;
+                            break;
+                        case XivChatType.CrossLinkShell1:
+                            text += "[CWLS1]" + message.Sender + ": " + message.Message;
+                            break;
+                        case XivChatType.CrossLinkShell2:
+                            text += "[CWLS2]" + message.Sender + ": " + message.Message;
+                            break;
+                        case XivChatType.CrossLinkShell3:
+                            text += "[CWLS3]" + message.Sender + ": " + message.Message;
+                            break;
+                        case XivChatType.CrossLinkShell4:
+                            text += "[CWLS4]" + message.Sender + ": " + message.Message;
+                            break;
+                        case XivChatType.CrossLinkShell5:
+                            text += "[CWLS5]" + message.Sender + ": " + message.Message;
+                            break;
+                        case XivChatType.CrossLinkShell6:
+                            text += "[CWLS6]" + message.Sender + ": " + message.Message;
+                            break;
+                        case XivChatType.CrossLinkShell7:
+                            text += "[CWLS7]" + message.Sender + ": " + message.Message;
+                            break;
+                        case XivChatType.CrossLinkShell8:
+                            text += "[CWLS8]" + message.Sender + ": " + message.Message;
+                            break;
+                        case XivChatType.Ls1:
+                            text += "[LS1]" + message.Sender + ": " + message.Message;
+                            break;
+                        case XivChatType.Ls2:
+                            text += "[LS2]" + message.Sender + ": " + message.Message;
+                            break;
+                        case XivChatType.Ls3:
+                            text += "[LS3]" + message.Sender + ": " + message.Message;
+                            break;
+                        case XivChatType.Ls4:
+                            text += "[LS4]" + message.Sender + ": " + message.Message;
+                            break;
+                        case XivChatType.Ls5:
+                            text += "[LS5]" + message.Sender + ": " + message.Message;
+                            break;
+                        case XivChatType.Ls6:
+                            text += "[LS6]" + message.Sender + ": " + message.Message;
+                            break;
+                        case XivChatType.Ls7:
+                            text += "[LS7]" + message.Sender + ": " + message.Message;
+                            break;
+                        case XivChatType.Ls8:
+                            text += "[LS8]" + message.Sender + ": " + message.Message;
+                            break;
+                        case XivChatType.PvPTeam:
+                            text += "[PvP]" + message.Sender + ": " + message.Message;
+                            break;
+                        default:
+                            text += message.Sender + ": " + message.Message;
+                            break;
+                    }
+
+                    result.Add(text);
                 }
             }
 
-            this.pi.Framework.Gui.Chat.PrintChat(new XivChatEntry
+            if (aLastN > 0)
             {
-                MessageBytes = Encoding.UTF8.GetBytes($"Chat log saved at {name}."),
-                Type = XivChatType.Echo
-            });
+                result = result.Skip(Math.Max(0, result.Count - aLastN)).ToList();
+            }
 
-            return name;
+            return result;
         }
-
     }
 
     public class ChatMessage
@@ -265,20 +371,21 @@ namespace XIVLogger
         private XivChatType type;
         private string message;
         private string sender;
+        private DateTime timestamp;
 
         public string Message { get => message; set => message = value; }
         public XivChatType Type { get => type; set => type = value; }
         public string Sender { get => sender; set => sender = value; }
+        public DateTime Timestamp { get => timestamp; set => timestamp = value; }
 
         public ChatMessage(XivChatType type, string sender, string message)
         {
             this.Sender = sender;
             this.Type = type;
             this.Message = message;
+            this.Timestamp = DateTime.Now;
         }
-
     }
-
 
 }
 
