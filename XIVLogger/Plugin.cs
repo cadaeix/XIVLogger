@@ -6,6 +6,8 @@ using System;
 using System.Reflection;
 using ImGuiNET;
 using System.Text;
+using Dalamud.IoC;
+using Dalamud.Game.Gui;
 
 namespace XIVLogger
 {
@@ -16,45 +18,45 @@ namespace XIVLogger
 
         private const string commandName = "/xivlogger";
 
-        private DalamudPluginInterface pi;
+        [PluginService] private DalamudPluginInterface PluginInterface { get; set; }
+        [PluginService] public ChatGui Chat { get; set; }
+        private CommandManager commandManager { get; init; }
         private Configuration configuration;
         private PluginUI ui;
         public ChatLog log;
 
         public string Location { get; private set; } = Assembly.GetExecutingAssembly().Location;
 
-        public void Initialize(DalamudPluginInterface pluginInterface)
-        {
-
-            this.pi = pluginInterface;
-            
-            this.configuration = this.pi.GetPluginConfig() as Configuration ?? new Configuration();
-            this.configuration.Initialize(this.pi);
+        public Plugin(CommandManager command)
+        {            
+            this.configuration = PluginInterface.GetPluginConfig() as Configuration ?? new Configuration();
+            this.configuration.Initialize(PluginInterface);
 
             this.ui = new PluginUI(this.configuration);
 
-            this.pi.CommandManager.AddHandler(commandName, new CommandInfo(OnCommand)
+            this.commandManager = command;
+            commandManager.AddHandler(commandName, new CommandInfo(OnCommand)
             {
                 HelpMessage = "Opens settings window for XIVLogger"
             });
 
-            this.pi.CommandManager.AddHandler("/savelog", new CommandInfo(OnSaveCommand)
+            commandManager.AddHandler("/savelog", new CommandInfo(OnSaveCommand)
             {
                 HelpMessage = "Saves a chat log as a text file with the current settings, /savelog <number> to save the last <number> messages"
             });
 
-            this.pi.CommandManager.AddHandler("/copylog", new CommandInfo(OnCopyCommand)
+            commandManager.AddHandler("/copylog", new CommandInfo(OnCopyCommand)
             {
                 HelpMessage = "Copies a chat log to your clipboard with the current settings, /copylog <number> to copy the last <number> messages"
             });
 
-            this.log = new ChatLog(configuration, pi);
+            this.log = new ChatLog(configuration, PluginInterface);
             this.ui.log = log;
 
-            this.pi.UiBuilder.OnBuildUi += DrawUI;
-            this.pi.UiBuilder.OnOpenConfigUi += (sender, args) => DrawConfigUI();
+            this.PluginInterface.UiBuilder.Draw += DrawUI;
+            this.PluginInterface.UiBuilder.OpenConfigUi += () => DrawConfigUI();
 
-            this.pi.Framework.Gui.Chat.OnChatMessage += OnChatMessage;
+            Chat.ChatMessage += OnChatMessage;
 
         }
 
@@ -68,12 +70,12 @@ namespace XIVLogger
         public void Dispose()
         {
 
-            this.pi.CommandManager.RemoveHandler(commandName);
-            this.pi.CommandManager.RemoveHandler("/savelog");
-            this.pi.CommandManager.RemoveHandler("/copylog");
-            this.pi.Dispose();
+            commandManager.RemoveHandler(commandName);
+            commandManager.RemoveHandler("/savelog");
+            commandManager.RemoveHandler("/copylog");
+            PluginInterface.Dispose();
 
-            this.pi.Framework.Gui.Chat.OnChatMessage -= OnChatMessage;
+            Chat.ChatMessage -= OnChatMessage;
         }
 
         private void OnCommand(string command, string args)
