@@ -6,6 +6,7 @@ using System;
 using System.Reflection;
 using ImGuiNET;
 using System.Text;
+using Dalamud.Game.Internal;
 
 namespace XIVLogger
 {
@@ -27,7 +28,7 @@ namespace XIVLogger
         {
 
             this.pi = pluginInterface;
-            
+
             this.configuration = this.pi.GetPluginConfig() as Configuration ?? new Configuration();
             this.configuration.Initialize(this.pi);
 
@@ -56,6 +57,22 @@ namespace XIVLogger
 
             this.pi.Framework.Gui.Chat.OnChatMessage += OnChatMessage;
 
+            this.pi.Framework.OnUpdateEvent += OnUpdate;
+
+            // To do: if autosave file exists, start new autosave file to avoid overwriting previous session
+
+        }
+
+        private void OnUpdate(Framework framework)
+        {
+            if (configuration.fAutosave)
+            {
+                if (configuration.checkTime())
+                {
+                    log.autoSave();
+                    configuration.updateAutosaveTime();
+                }
+            }
         }
 
         private void OnChatMessage(XivChatType type, uint id, ref SeString sender, ref SeString message, ref bool handled)
@@ -86,7 +103,7 @@ namespace XIVLogger
             log.printLog(args);
         }
 
-        private void OnCopyCommand (string command, string args)
+        private void OnCopyCommand(string command, string args)
         {
             ImGui.SetClipboardText(log.printLog(args, aClipboard: true));
         }

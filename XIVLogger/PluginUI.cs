@@ -1,4 +1,5 @@
 ﻿using Dalamud.Game.Text;
+using Dalamud.Plugin;
 using ImGuiNET;
 using System;
 using System.Collections.Generic;
@@ -11,14 +12,6 @@ namespace XIVLogger
     class PluginUI : IDisposable
     {
         private Configuration configuration;
-
-        // this extra bool exists for ImGui, since you can't ref a property
-        private bool visible = false;
-        public bool Visible
-        {
-            get { return this.visible; }
-            set { this.visible = value; }
-        }
 
         private bool settingsVisible = false;
         public bool SettingsVisible
@@ -41,6 +34,12 @@ namespace XIVLogger
             set { this.copyConfirmMessage = value; }
         }
 
+        private bool showIndividualConfig = false;
+        public bool ShowIndividualConfig { get => showIndividualConfig; set => showIndividualConfig = value; }
+        public ChatConfig SelectedConfig { get => selectedConfig; set => selectedConfig = value; }
+
+        private ChatConfig selectedConfig;
+
 
         public string latestLogTime = "";
 
@@ -53,6 +52,7 @@ namespace XIVLogger
 
         public void Dispose()
         {
+
         }
 
         public void Draw()
@@ -64,40 +64,8 @@ namespace XIVLogger
             // There are other ways to do this, but it is generally best to keep the number of
             // draw delegates as low as possible.
 
-            DrawMainWindow();
             DrawSettingsWindow();
-        }
-
-        public void DrawMainWindow()
-        {
-            if (!Visible)
-            {
-                return;
-            }
-
-            ImGui.SetNextWindowSize(new Vector2(375, 330), ImGuiCond.FirstUseEver);
-            ImGui.SetNextWindowSizeConstraints(new Vector2(375, 330), new Vector2(float.MaxValue, float.MaxValue));
-            if (ImGui.Begin("My Amazing Window", ref this.visible, ImGuiWindowFlags.NoScrollbar | ImGuiWindowFlags.NoScrollWithMouse))
-            {
-          
-                if (ImGui.Button("Show Settings"))
-                {
-                    SettingsVisible = true;
-                }
-
-                if (ImGui.Button("Print Log"))
-                {
-                    latestLogTime = log.printLog("");
-                    LogConfirmMessage = true;
-                }
-
-                if (LogConfirmMessage)
-                {
-                    ImGui.Text($"Log saved at {latestLogTime}");
-                }
-
-            }
-            ImGui.End();
+            drawNewConfig();
         }
 
         public void DrawSettingsWindow()
@@ -107,7 +75,7 @@ namespace XIVLogger
                 return;
             }
 
-            ImGui.SetNextWindowSize(new Vector2(375, 330));
+            ImGui.SetNextWindowSize(new Vector2(500, 330));
 
             if (ImGui.Begin("XIV Logger Configuration", ref this.settingsVisible))
             {
@@ -156,16 +124,121 @@ namespace XIVLogger
                     if (ImGui.BeginTabItem("Chat Types"))
                     {
 
-                        foreach (KeyValuePair<int, string> entry in configuration.PossibleChatTypes)
+                        ImGui.Text("Default configuration settings");
+
+                        if (ImGui.BeginTable("configlist", 3, ImGuiTableFlags.BordersInnerH))
                         {
-                            bool enabled = configuration.EnabledChatTypes[entry.Key];
-                            if (ImGui.Checkbox($"{entry.Value}", ref enabled))
+
+                            foreach (KeyValuePair<int, string> entry in configuration.PossibleChatTypes)
                             {
-                                configuration.EnabledChatTypes[entry.Key] = enabled;
-                                this.configuration.Save();
+                                ImGui.TableNextRow();
+                                ImGui.TableNextColumn();
+
+                                bool enabled = configuration.defaultConfig.TypeConfig[entry.Key];
+                                if (ImGui.Checkbox($"{entry.Value}", ref enabled))
+                                {
+                                    configuration.defaultConfig.TypeConfig[entry.Key] = enabled;
+                                    this.configuration.Save();
+                                }
+
                             }
 
+                            ImGui.EndTable();
                         }
+
+                        ImGui.EndTabItem();
+                    }
+
+                    if (ImGui.BeginTabItem("Advanced Settings"))
+                    {
+
+                        ImGui.Text("Set up additional configurations with different combinations of chat types here.");
+
+                        ImGui.Spacing();
+
+                        if (ImGui.BeginTable("configlist", 4, ImGuiTableFlags.BordersInner))
+                        {
+                            ImGui.TableNextRow();
+
+                            ImGui.TableNextColumn();
+
+                            ImGui.Text("Active?");
+
+                            ImGui.TableNextColumn();
+
+                            ImGui.Text("Configuration Name");
+
+                            ImGui.TableNextColumn();
+
+                            ImGui.Text("Edit");
+
+                            ImGui.TableNextColumn();
+
+                            ImGui.Text("Remove");
+
+
+                            // list
+                            var index = 0;
+
+                            foreach (ChatConfig config in configuration.configList.ToArray())
+                            {
+                                index++;
+
+                                string id = config.Name + index; 
+
+                                ImGui.TableNextRow();
+
+                                {
+                                    ImGui.TableNextColumn();
+                                    if (ImGui.Button((config.IsActive ? "@##active_" + id : "##active_" + id), new Vector2(20, 20)))
+                                    {
+                                        configuration.setActiveConfig(config);
+
+                                    }
+                                }
+
+                                {
+                                    ImGui.TableNextColumn();
+                                    ImGui.Text($"{config.Name}");
+                                }
+
+                                if (config != configuration.defaultConfig)
+                                {
+
+                                    {
+                                        ImGui.TableNextColumn();
+                                        if (ImGui.Button("Edit##" + id))
+                                        {
+                                            selectedConfig = config;
+                                            showIndividualConfig = true;
+                                        }
+                                    }
+
+                                    {
+                                        ImGui.TableNextColumn();
+                                        if (ImGui.Button("Remove##" + id))
+                                        {
+                                            configuration.removeConfig(config);
+                                            showIndividualConfig = false;
+                                        }
+                                    }
+
+                                }
+                            }
+
+                            ImGui.TableNextRow();
+
+                            ImGui.TableNextColumn();
+
+                            if (ImGui.Button("+"))
+                            {
+                                configuration.addNewConfig(DateTime.Now.ToString("ss"));
+                            }
+
+                            ImGui.EndTable();
+
+                        }
+
                         ImGui.EndTabItem();
                     }
 
@@ -176,8 +249,39 @@ namespace XIVLogger
             ImGui.End();
         }
 
+        private void drawNewConfig()
+        {
+            if (!showIndividualConfig)
+            {
+                return;
+            }
+
+            ImGui.SetNextWindowSize(new Vector2(500, 330));
+
+            if (ImGui.Begin("Edit Individual Config", ref this.showIndividualConfig))
+            {
+                if (ImGui.Button("Set as Active Chat Configuration"))
+                {
+                    configuration.setActiveConfig(selectedConfig);
+                }
+
+                foreach (KeyValuePair<int, string> entry in configuration.PossibleChatTypes)
+                {
+                    bool enabled = selectedConfig.TypeConfig[entry.Key];
+                    if (ImGui.Checkbox($"{entry.Value}", ref enabled))
+                    {
+                        selectedConfig.TypeConfig[entry.Key] = enabled;
+                        configuration.Save();
+                    }
+
+                }
+            }
+
+        }
+
         private void firstTab()
         {
+
             ImGui.Spacing();
 
             ImGui.Text("File Name:");
@@ -195,7 +299,24 @@ namespace XIVLogger
             {
                 this.configuration.Save();
             }
+
+            if (ImGui.Checkbox("Autosave", ref configuration.fAutosave))
+            {
+                log.autoSave();
+                configuration.updateAutosaveTime();
+                configuration.Save();
+            }
+
+            ImGui.Text("Every ");
+            ImGui.SameLine();
+            ImGui.InputFloat("##autosavemin", ref configuration.fAutosaveMin, 64);
+            ImGui.SameLine();
+            ImGui.Text(" minutes");
+
+            ImGui.Text("Autosave File Path:");
+
         }
+
 
     }
 }
