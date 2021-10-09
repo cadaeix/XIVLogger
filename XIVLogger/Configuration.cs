@@ -120,17 +120,18 @@ namespace XIVLogger
         private DalamudPluginInterface pi;
         private Configuration config;
 
-        [PluginService] public ChatGui ChatBox { get; set; }
+        private ChatGui chat;
 
         public List<ChatMessage> Log { get => log; }
         public Dictionary<int, bool> ChatConfig { get => chatConfig; set => chatConfig = value; }
 
-        public ChatLog(Configuration aConfig, DalamudPluginInterface aPi)
+        public ChatLog(Configuration aConfig, DalamudPluginInterface aPi, ChatGui aChat)
         {
             log = new List<ChatMessage>();
             ChatConfig = aConfig.EnabledChatTypes;
             config = aConfig;
             pi = aPi;
+            chat = aChat;
         }
 
         public void addMessage(XivChatType type, string sender, string message)
@@ -185,7 +186,7 @@ namespace XIVLogger
 
                 if (lastN > 0)
                 {
-                    this.ChatBox.PrintChat(new XivChatEntry
+                    this.chat.PrintChat(new XivChatEntry
                     {
                         Message = $"Last {lastN} messages copied to clipboard.",
                         Type = XivChatType.Echo
@@ -193,7 +194,7 @@ namespace XIVLogger
                 }
                 else
                 {
-                    this.ChatBox.PrintChat(new XivChatEntry
+                    this.chat.PrintChat(new XivChatEntry
                     {
                         Message = $"Chat log copied to clipboard.",
                         Type = XivChatType.Echo
@@ -246,11 +247,11 @@ namespace XIVLogger
 
                 if (lastN > 0)
                 {
-                    this.ChatBox.Print($"Last {lastN} messages saved at {path}.");
+                    this.chat.Print($"Last {lastN} messages saved at {path}.");
                 }
                 else
                 {
-                    this.ChatBox.Print($"Chat log saved at {path}.");
+                    this.chat.Print($"Chat log saved at {path}.");
                 }
 
                 return path;
