@@ -41,7 +41,7 @@ namespace XIVLogger
         public string autoFileName = string.Empty;
 
         [NonSerialized]
-        private DalamudPluginInterface pluginInterface;
+        public DalamudPluginInterface pluginInterface;
 
         public void Initialize(DalamudPluginInterface pluginInterface)
         {
@@ -281,13 +281,16 @@ namespace XIVLogger
         private DalamudPluginInterface pi;
         private Configuration config;
 
+        private ChatGui chat;
+
         public List<ChatMessage> Log { get => log; }
 
-        public ChatLog(Configuration aConfig, DalamudPluginInterface aPi)
+        public ChatLog(Configuration aConfig, DalamudPluginInterface aPi, ChatGui aChat)
         {
             log = new List<ChatMessage>();
             config = aConfig;
             pi = aPi;
+            chat = aChat;
         }
 
         public void addMessage(XivChatType type, string sender, string message)
@@ -343,17 +346,17 @@ namespace XIVLogger
 
                 if (lastN > 0)
                 {
-                    this.pi.Framework.Gui.Chat.PrintChat(new XivChatEntry
+                    this.chat.PrintChat(new XivChatEntry
                     {
-                        MessageBytes = Encoding.UTF8.GetBytes($"Last {lastN} messages copied to clipboard."),
+                        Message = $"Last {lastN} messages copied to clipboard.",
                         Type = XivChatType.Echo
                     });
                 }
                 else
                 {
-                    this.pi.Framework.Gui.Chat.PrintChat(new XivChatEntry
+                    this.chat.PrintChat(new XivChatEntry
                     {
-                        MessageBytes = Encoding.UTF8.GetBytes($"Chat log copied to clipboard."),
+                        Message = $"Chat log copied to clipboard.",
                         Type = XivChatType.Echo
                     });
                 }
@@ -404,19 +407,11 @@ namespace XIVLogger
 
                 if (lastN > 0)
                 {
-                    this.pi.Framework.Gui.Chat.PrintChat(new XivChatEntry
-                    {
-                        MessageBytes = Encoding.UTF8.GetBytes($"Last {lastN} messages saved at {path}."),
-                        Type = XivChatType.Echo
-                    });
+                    this.chat.Print($"Last {lastN} messages saved at {path}.");
                 }
                 else
                 {
-                    this.pi.Framework.Gui.Chat.PrintChat(new XivChatEntry
-                    {
-                        MessageBytes = Encoding.UTF8.GetBytes($"Chat log saved at {path}."),
-                        Type = XivChatType.Echo
-                    });
+                    this.chat.Print($"Chat log saved at {path}.");
                 }
 
                 return path;
