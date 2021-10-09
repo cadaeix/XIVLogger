@@ -238,6 +238,39 @@ namespace XIVLogger
                 };
         }
 
+        public void addNameReplacement(string aName, string bName)
+        {
+            if(!nameReplacements.ContainsKey(aName))
+            {
+                nameReplacements.Add(aName, bName);
+            }
+            else
+            {
+                nameReplacements.Remove(aName);
+                nameReplacements.Add(aName, bName);
+            }
+            
+        }
+
+        public void removeNameReplacement(string aName)
+        {
+            if(nameReplacements.ContainsKey(aName))
+            {
+                nameReplacements.Remove(aName);
+            }
+            
+        }
+
+        public void changeNameReplacement(string paName, string caName, string cbName)
+        {
+
+            if(nameReplacements.ContainsKey(aName))
+            {
+                nameReplacements.Remove(aName);
+            }
+            nameReplacements.Add(caName, cbName);
+        }
+        
 
     }
 
