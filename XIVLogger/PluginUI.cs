@@ -279,6 +279,27 @@ namespace XIVLogger
 
         }
 
+        private void nameTab()
+        {
+            ImGui.Spacing();
+
+            if (ImGui.BeginTable("configlist", 4, ImGuiTableFlags.BordersInner))
+                {
+
+                    ImGui.TableNextRow();
+        
+
+                    foreach (KeyValuePair<int, string> entry in selectedConfig.nameReplacements)
+                    {
+                        ImGui.TableNextColumn();
+                        ImGui.Text($"{config.Name}");
+                            
+                    }
+
+                    ImGui.EndTable();
+                }
+        }
+
         private void firstTab()
         {
 
