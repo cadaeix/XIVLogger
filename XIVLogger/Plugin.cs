@@ -50,7 +50,7 @@ namespace XIVLogger
                 HelpMessage = "Copies a chat log to your clipboard with the current settings, /copylog <number> to copy the last <number> messages"
             });
 
-            this.log = new ChatLog(configuration, PluginInterface);
+            this.log = new ChatLog(configuration, PluginInterface, Chat);
             this.ui.log = log;
 
             this.PluginInterface.UiBuilder.Draw += DrawUI;
