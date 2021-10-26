@@ -232,7 +232,7 @@ namespace XIVLogger
 
                             if (ImGui.Button("+"))
                             {
-                                configuration.addNewConfig(DateTime.Now.ToString("ss"));
+                                configuration.addNewConfig("New Config");
                             }
 
                             ImGui.EndTable();
@@ -265,15 +265,33 @@ namespace XIVLogger
                     configuration.setActiveConfig(selectedConfig);
                 }
 
-                foreach (KeyValuePair<int, string> entry in configuration.PossibleChatTypes)
+                ImGui.Text("Config Name:");
+                ImGui.SameLine();
+                ImGui.InputText("##confname", ref selectedConfig.name, 256);
+                ImGui.Spacing();
+
+                if (ImGui.BeginTabBar("##indie tabs"))
                 {
-                    bool enabled = selectedConfig.TypeConfig[entry.Key];
-                    if (ImGui.Checkbox($"{entry.Value}", ref enabled))
+                    if (ImGui.BeginTabItem("Chat Config"))
                     {
-                        selectedConfig.TypeConfig[entry.Key] = enabled;
-                        configuration.Save();
+                        foreach (KeyValuePair<int, string> entry in configuration.PossibleChatTypes)
+                        {
+                            bool enabled = selectedConfig.TypeConfig[entry.Key];
+                            if (ImGui.Checkbox($"{entry.Value}", ref enabled))
+                            {
+                                selectedConfig.TypeConfig[entry.Key] = enabled;
+                                configuration.Save();
+                            }
+
+                        }
+                        ImGui.EndTabItem();
                     }
 
+                    if (ImGui.BeginTabItem("Name Config"))
+                    {
+                        nameTab();
+                        ImGui.EndTabItem();
+                    }
                 }
             }
 
@@ -284,19 +302,53 @@ namespace XIVLogger
             ImGui.Spacing();
 
             if (ImGui.BeginTable("configlist", 4, ImGuiTableFlags.BordersInner))
+            {
+
+                ImGui.TableNextRow();
+                ImGui.TableNextColumn();
+                ImGui.TableNextColumn();
+                ImGui.Text($"Name");
+                ImGui.TableNextColumn();
+                ImGui.Text($"Replacement");
+                ImGui.TableNextColumn();
+
+                foreach (KeyValuePair<string, string> entry in selectedConfig.NameReplacements)
                 {
-
                     ImGui.TableNextRow();
-        
-
-                    foreach (KeyValuePair<int, string> entry in selectedConfig.nameReplacements)
+                    ImGui.TableNextColumn();
+                    ImGui.TableNextColumn();
+                    ImGui.Text($"{entry.Key}");
+                    ImGui.TableNextColumn();
+                    ImGui.Text($"{entry.Value}");
+                    ImGui.TableNextColumn();
+                    if (ImGui.Button("Remove##" + entry.Key))
                     {
-                        ImGui.TableNextColumn();
-                        ImGui.Text($"{config.Name}");
-                            
+                        selectedConfig.removeNameReplacement(entry.Key);
                     }
+                }
 
-                    ImGui.EndTable();
+                ImGui.TableNextRow();
+
+
+                ImGui.TableNextColumn();
+
+                if (ImGui.Button("+"))
+                {
+                    if (!String.IsNullOrWhiteSpace(configuration.tempFirstName) && !String.IsNullOrWhiteSpace(configuration.tempSecondName))
+                    {
+                        selectedConfig.addNameReplacement(configuration.tempFirstName, configuration.tempSecondName);
+                        configuration.tempFirstName = string.Empty;
+                        configuration.tempSecondName = string.Empty;
+                    }
+                    
+                }
+                ImGui.TableNextColumn();
+                ImGui.InputText("##nameone", ref configuration.tempFirstName, 256);
+                ImGui.TableNextColumn();
+                ImGui.InputText("##nametwo", ref configuration.tempSecondName, 256);
+                ImGui.TableNextColumn();
+
+                ImGui.EndTable();
                 }
         }
 
@@ -330,11 +382,16 @@ namespace XIVLogger
 
             ImGui.Text("Every ");
             ImGui.SameLine();
-            ImGui.InputFloat("##autosavemin", ref configuration.fAutosaveMin, 64);
+            ImGui.InputInt("##autosavemin", ref configuration.fAutoMin, 64);
             ImGui.SameLine();
             ImGui.Text(" minutes");
 
+            ImGui.Text("Autosave File Name:");
+            ImGui.SameLine();
+            ImGui.InputText("##autofilename", ref configuration.autoFileName, 256);
             ImGui.Text("Autosave File Path:");
+            ImGui.SameLine();
+            ImGui.InputText("##autofilepath", ref configuration.autoFilePath, 256);
 
         }
 

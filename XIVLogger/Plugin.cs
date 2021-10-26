@@ -8,6 +8,8 @@ using ImGuiNET;
 using System.Text;
 using Dalamud.IoC;
 using Dalamud.Game.Gui;
+using Dalamud.Game;
+using Dalamud.Logging;
 
 namespace XIVLogger
 {
@@ -18,9 +20,13 @@ namespace XIVLogger
 
         private const string commandName = "/xivlogger";
 
+        [PluginService] private DalamudPluginInterface PluginInterface { get; set; }
+        [PluginService] public ChatGui Chat { get; set; }
+        [PluginService] public Framework framework { get; set; }
+        private CommandManager commandManager { get; init; }
         private Configuration configuration;
-        private PluginUI ui;
         public ChatLog log;
+        private PluginUI ui;
 
         public string Location { get; private set; } = Assembly.GetExecutingAssembly().Location;
 
@@ -55,7 +61,7 @@ namespace XIVLogger
 
             Chat.ChatMessage += OnChatMessage;
 
-            this.pi.Framework.OnUpdateEvent += OnUpdate;
+            this.framework.Update += OnUpdate;
 
             // To do: if autosave file exists, start new autosave file to avoid overwriting previous session
 
@@ -69,7 +75,9 @@ namespace XIVLogger
                 {
                     log.autoSave();
                     configuration.updateAutosaveTime();
+  
                 }
+
             }
         }
 
@@ -87,7 +95,8 @@ namespace XIVLogger
             commandManager.RemoveHandler("/savelog");
             commandManager.RemoveHandler("/copylog");
             PluginInterface.Dispose();
-
+            
+            this.framework.Update -= OnUpdate;
             Chat.ChatMessage -= OnChatMessage;
         }
 
