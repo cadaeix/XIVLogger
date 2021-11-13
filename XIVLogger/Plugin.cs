@@ -10,6 +10,7 @@ using Dalamud.IoC;
 using Dalamud.Game.Gui;
 using Dalamud.Game;
 using Dalamud.Logging;
+using Dalamud.Game.ClientState;
 
 namespace XIVLogger
 {
@@ -23,10 +24,13 @@ namespace XIVLogger
         [PluginService] private DalamudPluginInterface PluginInterface { get; set; }
         [PluginService] public ChatGui Chat { get; set; }
         [PluginService] public Framework framework { get; set; }
+        [PluginService] public ClientState ClientState { get; set; }
         private CommandManager commandManager { get; init; }
         private Configuration configuration;
         public ChatLog log;
         private PluginUI ui;
+        private bool loggingIn = false;
+        private bool loggedIn = false;
 
         public string Location { get; private set; } = Assembly.GetExecutingAssembly().Location;
 
@@ -58,7 +62,8 @@ namespace XIVLogger
 
             this.PluginInterface.UiBuilder.Draw += DrawUI;
             this.PluginInterface.UiBuilder.OpenConfigUi += () => DrawConfigUI();
-
+            this.ClientState.Login += OnLogin;
+            this.ClientState.Logout += OnLogout;
             Chat.ChatMessage += OnChatMessage;
 
             this.framework.Update += OnUpdate;
@@ -67,8 +72,32 @@ namespace XIVLogger
 
         }
 
+        private void OnLogin(object sender, EventArgs e)
+        {
+            loggingIn = true;
+        }
+
+        private void OnLogout(object sender, EventArgs e)
+        {
+            if (configuration.fAutosave && loggedIn)
+            {
+                log.autoSave();
+                log.wipeLog();
+            }
+            PluginLog.Debug("Logged out!");
+            loggedIn = false;
+        }
+
         private void OnUpdate(Framework framework)
         {
+
+            if (loggingIn && this.ClientState.LocalPlayer != null)
+            {
+                loggingIn = false;
+                loggedIn = true;
+                log.setupAutosave(this.ClientState.LocalPlayer.Name.ToString());
+            }
+
             if (configuration.fAutosave)
             {
                 if (configuration.checkTime())
@@ -98,6 +127,8 @@ namespace XIVLogger
             
             this.framework.Update -= OnUpdate;
             Chat.ChatMessage -= OnChatMessage;
+            this.ClientState.Login -= OnLogin;
+            this.ClientState.Logout -= OnLogout;
         }
 
         private void OnCommand(string command, string args)

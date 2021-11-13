@@ -4,6 +4,7 @@ using ImGuiNET;
 using System;
 using System.Collections.Generic;
 using System.Numerics;
+using System.Text;
 
 namespace XIVLogger
 {
@@ -19,6 +20,9 @@ namespace XIVLogger
             get { return this.settingsVisible; }
             set { this.settingsVisible = value; }
         }
+
+        private bool rpAidVisible = false;
+        public bool RpAidVisible { get => rpAidVisible; set => rpAidVisible = value; }
 
         private bool logConfirmMessage = false;
         public bool LogConfirmMessage
@@ -38,12 +42,15 @@ namespace XIVLogger
         public bool ShowIndividualConfig { get => showIndividualConfig; set => showIndividualConfig = value; }
         public ChatConfig SelectedConfig { get => selectedConfig; set => selectedConfig = value; }
 
+
         private ChatConfig selectedConfig;
 
 
         public string latestLogTime = "";
 
         public ChatLog log;
+
+        private int chatIndex = 0;
 
         public PluginUI(Configuration configuration)
         {
@@ -66,6 +73,59 @@ namespace XIVLogger
 
             DrawSettingsWindow();
             drawNewConfig();
+            DrawRPAidWindow();
+        }
+
+        public void DrawRPAidWindow()
+        {
+            if (!RpAidVisible)
+            {
+                return;
+            }
+
+            ImGui.SetNextWindowSize(new Vector2(500, 400));
+            if (ImGui.Begin("RP Aid", ref this.rpAidVisible))
+            {
+                if (ImGui.InputTextMultiline(string.Empty, ref configuration.RPAidLog, 1024 * 4196, new Vector2(400, 230)))
+                    { }
+
+                ImGui.Text($"{configuration.RPAidLog.Length} / 500");
+
+                ImGui.Text($"{showSelectedText()}");
+
+
+                if (ImGui.Button("<"))
+                {
+                    if (chatIndex > 0)
+                    {
+                        chatIndex--;
+                    }
+                }
+
+                ImGui.SameLine();
+
+                if (ImGui.Button(">"))
+                {
+                    if (chatIndex > Math.Ceiling((decimal)(configuration.RPAidLog.Length/500)))
+                    {
+                        chatIndex = (int)Math.Ceiling((decimal)(configuration.RPAidLog.Length / 500));
+                    }
+                    else
+                    {
+                        chatIndex++;
+                    }
+                }
+
+
+            }
+
+        }
+
+        public string showSelectedText()
+        {
+            string text = configuration.RPAidLog.Replace(System.Environment.NewLine, " ");
+
+            return text?[(chatIndex * 500)..Math.Min((500 * (chatIndex + 1)), text.Length)];
         }
 
         public void DrawSettingsWindow()
@@ -85,6 +145,7 @@ namespace XIVLogger
                     latestLogTime = log.printLog("");
                     LogConfirmMessage = true;
                     CopyConfirmMessage = false;
+                    configuration.Save();
                 }
 
                 ImGui.SameLine();
@@ -95,7 +156,15 @@ namespace XIVLogger
                     ImGui.SetClipboardText(clip);
                     CopyConfirmMessage = true;
                     LogConfirmMessage = false;
+                    configuration.Save();
                 }
+
+                // RP Aid button is coming soon
+                //ImGui.SameLine();
+                //if (ImGui.Button("Text Editor"))
+                //{
+                //    RpAidVisible = true;
+                //}
 
                 if (LogConfirmMessage)
                 {
@@ -176,6 +245,21 @@ namespace XIVLogger
 
                             ImGui.Text("Remove");
 
+                            ImGui.TableNextRow();
+
+                            {
+                                ImGui.TableNextColumn();
+                                if (ImGui.Button((configuration.defaultConfig.IsActive ? "@##active_default" : "##active_default"), new Vector2(20, 20)))
+                                {
+                                    configuration.setActiveConfig(configuration.defaultConfig);
+
+                                }
+                            }
+
+                            {
+                                ImGui.TableNextColumn();
+                                ImGui.Text($"{configuration.defaultConfig.Name}");
+                            }
 
                             // list
                             var index = 0;
@@ -202,27 +286,23 @@ namespace XIVLogger
                                     ImGui.Text($"{config.Name}");
                                 }
 
-                                if (config != configuration.defaultConfig)
+
                                 {
-
+                                    ImGui.TableNextColumn();
+                                    if (ImGui.Button("Edit##" + id))
                                     {
-                                        ImGui.TableNextColumn();
-                                        if (ImGui.Button("Edit##" + id))
-                                        {
-                                            selectedConfig = config;
-                                            showIndividualConfig = true;
-                                        }
+                                        selectedConfig = config;
+                                        showIndividualConfig = true;
                                     }
+                                }
 
+                                {
+                                    ImGui.TableNextColumn();
+                                    if (ImGui.Button("Remove##" + id))
                                     {
-                                        ImGui.TableNextColumn();
-                                        if (ImGui.Button("Remove##" + id))
-                                        {
-                                            configuration.removeConfig(config);
-                                            showIndividualConfig = false;
-                                        }
+                                        configuration.removeConfig(config);
+                                        showIndividualConfig = false;
                                     }
-
                                 }
                             }
 
@@ -243,6 +323,11 @@ namespace XIVLogger
                     }
 
                     ImGui.EndTabBar();
+                }
+
+                if (ImGui.Button("Save"))
+                {
+                    configuration.Save();
                 }
 
             }
@@ -287,11 +372,13 @@ namespace XIVLogger
                         ImGui.EndTabItem();
                     }
 
-                    if (ImGui.BeginTabItem("Name Config"))
-                    {
-                        nameTab();
-                        ImGui.EndTabItem();
-                    }
+                    // Currently unimplemented, name replacements is half working
+
+                    //if (ImGui.BeginTabItem("Name Config"))
+                    //{
+                    //    nameTab();
+                    //    ImGui.EndTabItem();
+                    //}
                 }
             }
 
@@ -375,6 +462,7 @@ namespace XIVLogger
 
             if (ImGui.Checkbox("Autosave", ref configuration.fAutosave))
             {
+                log.setupAutosave();
                 log.autoSave();
                 configuration.updateAutosaveTime();
                 configuration.Save();
@@ -386,15 +474,53 @@ namespace XIVLogger
             ImGui.SameLine();
             ImGui.Text(" minutes");
 
-            ImGui.Text("Autosave File Name:");
-            ImGui.SameLine();
-            ImGui.InputText("##autofilename", ref configuration.autoFileName, 256);
             ImGui.Text("Autosave File Path:");
             ImGui.SameLine();
             ImGui.InputText("##autofilepath", ref configuration.autoFilePath, 256);
 
         }
 
+        public void Wrap(string input)
+        {
+            input = input.Replace("\n", " XXX ");
+
+            string[] inputArray = input.Split(' ');
+
+            int count = 0;
+            foreach (string splits in inputArray)
+            {
+                bool newline = false;
+                if (ImGui.GetContentRegionAvail().X - 5 - ImGui.CalcTextSize(splits).X < 0)
+                { ImGui.Text(""); }
+
+                if (splits == "XXX")
+                {
+                    newline = true;
+                }
+                else
+                {
+                    ImGui.Text(splits.Trim());
+                }
+
+                if (count < (inputArray.Length - 1))
+                {
+                    if (!newline)
+                    { ImGui.SameLine(); }
+                    count++;
+                }
+            }
+        }
+
+        public static string StripPunctuation(string s)
+        {
+            var sb = new StringBuilder();
+            foreach (char c in s)
+            {
+                if (!char.IsPunctuation(c))
+                    sb.Append(c);
+            }
+            return sb.ToString();
+        }
 
     }
 }

@@ -47,8 +47,11 @@ namespace XIVLogger
 
         public string tempSecondName = string.Empty;
 
+        public string RPAidLog = string.Empty;
+
         [NonSerialized]
         public DalamudPluginInterface pluginInterface;
+
 
         public void Initialize(DalamudPluginInterface pluginInterface)
         {
@@ -91,17 +94,20 @@ namespace XIVLogger
                     { (int) XivChatType.Notice, "Notice" }
                 };
 
-
-            defaultConfig = new ChatConfig();
-
-            configList = new List<ChatConfig>
+            if (this.defaultConfig == null)
             {
-                defaultConfig
-            };
+                this.defaultConfig = new ChatConfig();
+                this.activeConfig = this.defaultConfig;
+            }
 
-            activeConfig = defaultConfig;
+            if (this.configList == null)
+            {
+                this.configList = new List<ChatConfig>();
+            }
 
-            setActiveConfig(defaultConfig);
+            setActiveConfig(this.defaultConfig);
+
+            Save();
 
         }
 
@@ -126,6 +132,11 @@ namespace XIVLogger
 
         public void removeConfig(ChatConfig aConfig)
         {
+            if (aConfig == defaultConfig)
+            {
+                return;
+            }
+
             if (aConfig.IsActive)
             {
                 setActiveConfig(defaultConfig);
@@ -297,7 +308,7 @@ namespace XIVLogger
 
     public class ChatLog
     {
-        private readonly List<ChatMessage> log;
+        private List<ChatMessage> log;
         private DalamudPluginInterface pi;
         private Configuration config;
 
@@ -311,6 +322,11 @@ namespace XIVLogger
             config = aConfig;
             pi = aPi;
             chat = aChat;
+        }
+
+        public void wipeLog()
+        {
+            log = new List<ChatMessage>();
         }
 
         public void addMessage(XivChatType type, string sender, string message)
@@ -559,6 +575,15 @@ namespace XIVLogger
             return result;
         }
 
+        public void setupAutosave()
+        {
+            config.autoFileName = getTimeStamp() + " ";
+        }
+
+        public void setupAutosave(string characterName)
+        {
+            config.autoFileName = getTimeStamp() + " " + characterName;
+        }
         public void autoSave()
         {
             if (config.fAutosave)
@@ -566,8 +591,6 @@ namespace XIVLogger
                 List<String> printedLog;
 
                 printedLog = prepareLog(aLastN: 0, aTimestamp: config.fTimestamp);
-
-                string name = getTimeStamp();
 
                 string folder;
 
@@ -580,25 +603,20 @@ namespace XIVLogger
                     folder = config.autoFilePath;
                 }
 
-                if (!string.IsNullOrEmpty(config.autoFileName) && !string.IsNullOrWhiteSpace(config.autoFileName))
-                {
-                    name = replaceInvalidChars(config.autoFileName);
-                }
+                string path = folder + @"\" + config.autoFileName + ".txt";
 
-                string path = folder + @"\" + name + ".txt";
+                //int count = 0;
 
-                int count = 0;
+                //while (File.Exists(path))
+                //{
+                //    count++;
+                //    path = folder + @"\" + name + count + ".txt";
 
-                while (File.Exists(path))
-                {
-                    count++;
-                    path = folder + @"\" + name + count + ".txt";
-
-                }
+                //}
 
                 using (System.IO.StreamWriter file = new System.IO.StreamWriter(path, false))
                 {
-                    file.WriteLine(name + "\n");
+                    file.WriteLine("Autosave");
 
                     foreach (string message in printedLog)
                     {
