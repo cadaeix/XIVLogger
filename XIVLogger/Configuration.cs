@@ -6,8 +6,9 @@ using System.Collections.Generic;
 using System.IO;
 using System.Text;
 using System.Linq;
-using Dalamud.IoC;
 using Dalamud.Game.Gui;
+using Dalamud.Game;
+using Dalamud.Logging;
 
 namespace XIVLogger
 {
@@ -15,6 +16,12 @@ namespace XIVLogger
     public class Configuration : IPluginConfiguration
     {
         public int Version { get; set; } = 0;
+
+        public List<ChatConfig> configList;
+
+        public ChatConfig defaultConfig;
+
+        public ChatConfig activeConfig;
 
         public Dictionary<int, Boolean> EnabledChatTypes;
 
@@ -26,8 +33,25 @@ namespace XIVLogger
 
         public bool fTimestamp = false;
 
-        [NonSerialized] 
+        public bool fAutosave = false;
+
+        public DateTime lastAutosave;
+
+        public int fAutoMin = 5;
+
+        public string autoFilePath = string.Empty;
+
+        public string autoFileName = string.Empty;
+
+        public string tempFirstName = string.Empty;
+
+        public string tempSecondName = string.Empty;
+
+        public string RPAidLog = string.Empty;
+
+        [NonSerialized]
         public DalamudPluginInterface pluginInterface;
+
 
         public void Initialize(DalamudPluginInterface pluginInterface)
         {
@@ -67,9 +91,101 @@ namespace XIVLogger
                     { (int) XivChatType.Echo, "Echo (Some System Messages)" },
                     { (int) XivChatType.SystemMessage, "System Messages" },
                     { (int) XivChatType.SystemError, "System Error" },
+                    { (int) XivChatType.Notice, "Notice" }
                 };
 
-            EnabledChatTypes = new Dictionary<int, bool>
+            if (this.defaultConfig == null)
+            {
+                this.defaultConfig = new ChatConfig();
+                this.activeConfig = this.defaultConfig;
+            }
+
+            if (this.configList == null)
+            {
+                this.configList = new List<ChatConfig>();
+            }
+
+            setActiveConfig(this.defaultConfig);
+
+            Save();
+
+        }
+
+        public void Save()
+        {
+            this.pluginInterface.SavePluginConfig(this);
+        }
+
+        public void setActiveConfig(ChatConfig aConfig)
+        {
+            activeConfig.IsActive = false;
+            activeConfig = aConfig;
+            activeConfig.IsActive = true;
+        }
+
+        public ChatConfig addNewConfig(string name)
+        {
+            configList.Add(new ChatConfig(name));
+
+            return configList.Last();
+        }
+
+        public void removeConfig(ChatConfig aConfig)
+        {
+            if (aConfig == defaultConfig)
+            {
+                return;
+            }
+
+            if (aConfig.IsActive)
+            {
+                setActiveConfig(defaultConfig);
+            }
+
+            configList.Remove(aConfig);
+        }
+
+        public bool checkTime()
+        {
+            if (fAutoMin == 0)
+            {
+                return false;
+            }
+
+            return lastAutosave.AddMinutes(fAutoMin) < DateTime.UtcNow;
+        }
+
+        public void updateAutosaveTime()
+        {
+            lastAutosave = DateTime.UtcNow;
+        }
+
+    }
+
+    public class ChatConfig
+    {
+        public string name;
+
+        private Dictionary<int, bool> typeConfig;
+
+        private Dictionary<string, string> nameReplacements;
+
+        private bool isActive;
+
+        public Dictionary<int, bool> TypeConfig { get => typeConfig; set => typeConfig = value; }
+        public string Name { get => name; set => name = value; }
+        public bool IsActive { get => isActive; set => isActive = value; }
+        public Dictionary<string, string> NameReplacements { get => nameReplacements; set => nameReplacements = value; }
+
+        public ChatConfig()
+        {
+            name = "Default";
+
+            isActive = false;
+
+            nameReplacements = new Dictionary<string, string>();
+
+            typeConfig = new Dictionary<int, bool>
                 {
                     { (int) XivChatType.Say, true },
                     { (int) XivChatType.Shout, true },
@@ -103,35 +219,114 @@ namespace XIVLogger
                     { (int) XivChatType.Echo, false },
                     { (int) XivChatType.SystemMessage, false },
                     { (int) XivChatType.SystemError, false },
+                    { (int) XivChatType.Notice, false }
                 };
         }
 
-        public void Save()
+        public ChatConfig(string aName)
         {
-            this.pluginInterface.SavePluginConfig(this);
+            name = aName;
+
+            isActive = false;
+
+            nameReplacements = new Dictionary<string, string>();
+
+            typeConfig = new Dictionary<int, bool>
+                {
+                    { (int) XivChatType.Say, true },
+                    { (int) XivChatType.Shout, true },
+                    { (int) XivChatType.Yell, true },
+                    { (int) XivChatType.Party, true },
+                    { (int) XivChatType.CrossParty, true },
+                    { (int) XivChatType.Alliance, true },
+                    { (int) XivChatType.TellIncoming, true },
+                    { (int) XivChatType.TellOutgoing, true },
+                    { (int) XivChatType.CustomEmote, true },
+                    { (int) XivChatType.StandardEmote, true },
+                    { (int) XivChatType.CrossLinkShell1, false },
+                    { (int) XivChatType.CrossLinkShell2, false },
+                    { (int) XivChatType.CrossLinkShell3, false },
+                    { (int) XivChatType.CrossLinkShell4, false },
+                    { (int) XivChatType.CrossLinkShell5, false },
+                    { (int) XivChatType.CrossLinkShell6, false },
+                    { (int) XivChatType.CrossLinkShell7, false },
+                    { (int) XivChatType.CrossLinkShell8, false },
+                    { (int) XivChatType.Ls1, false },
+                    { (int) XivChatType.Ls2, false },
+                    { (int) XivChatType.Ls3, false },
+                    { (int) XivChatType.Ls4, false },
+                    { (int) XivChatType.Ls5, false },
+                    { (int) XivChatType.Ls6, false },
+                    { (int) XivChatType.Ls7, false },
+                    { (int) XivChatType.Ls8, false },
+                    { (int) XivChatType.PvPTeam, false },
+                    { (int) XivChatType.NoviceNetwork, false },
+                    { (int) XivChatType.FreeCompany, false },
+                    { (int) XivChatType.Echo, false },
+                    { (int) XivChatType.SystemMessage, false },
+                    { (int) XivChatType.SystemError, false },
+                    { (int) XivChatType.Notice, false }
+                };
         }
+
+        public void addNameReplacement(string aName, string bName)
+        {
+            if(!nameReplacements.ContainsKey(aName))
+            {
+                nameReplacements.Add(aName, bName);
+            }
+            else
+            {
+                nameReplacements.Remove(aName);
+                nameReplacements.Add(aName, bName);
+            }
+            
+        }
+
+        public void removeNameReplacement(string aName)
+        {
+            if(nameReplacements.ContainsKey(aName))
+            {
+                nameReplacements.Remove(aName);
+            }
+            
+        }
+
+        public void changeNameReplacement(string paName, string caName, string cbName)
+        {
+
+            if(nameReplacements.ContainsKey(paName))
+            {
+                nameReplacements.Remove(paName);
+            }
+            nameReplacements.Add(caName, cbName);
+        }
+        
+
     }
 
 
     public class ChatLog
     {
-        private readonly List<ChatMessage> log;
-        private Dictionary<int, bool> chatConfig;
+        private List<ChatMessage> log;
         private DalamudPluginInterface pi;
         private Configuration config;
 
         private ChatGui chat;
 
         public List<ChatMessage> Log { get => log; }
-        public Dictionary<int, bool> ChatConfig { get => chatConfig; set => chatConfig = value; }
 
         public ChatLog(Configuration aConfig, DalamudPluginInterface aPi, ChatGui aChat)
         {
             log = new List<ChatMessage>();
-            ChatConfig = aConfig.EnabledChatTypes;
             config = aConfig;
             pi = aPi;
             chat = aChat;
+        }
+
+        public void wipeLog()
+        {
+            log = new List<ChatMessage>();
         }
 
         public void addMessage(XivChatType type, string sender, string message)
@@ -163,6 +358,7 @@ namespace XIVLogger
 
         public string printLog(string args, bool aClipboard = false)
         {
+
             List<String> printedLog;
 
             int lastN = 0;
@@ -256,18 +452,27 @@ namespace XIVLogger
 
                 return path;
             }
-  
+
         }
 
         private List<string> prepareLog(int aLastN = 0, bool aTimestamp = false)
         {
+            ChatConfig activeConfig = config.activeConfig;
+
             List<string> result = new List<string>();
 
             foreach (ChatMessage message in Log)
             {
-                if (ChatConfig.ContainsKey((int)message.Type) && ChatConfig[(int)message.Type])
+                if (activeConfig.TypeConfig.ContainsKey((int)message.Type) && activeConfig.TypeConfig[(int)message.Type])
                 {
                     string text = String.Empty;
+
+                    string sender = message.Sender;
+
+                    if(activeConfig.NameReplacements.ContainsKey(sender))
+                    {
+                        sender = activeConfig.NameReplacements[sender];
+                    }
 
                     if (aTimestamp)
                     {
@@ -277,76 +482,84 @@ namespace XIVLogger
                     switch (message.Type)
                     {
                         case XivChatType.CustomEmote:
-                            text += message.Sender + message.Message;
+                            text += sender + message.Message;
                             break;
                         case XivChatType.StandardEmote:
                             text += message.Message;
                             break;
                         case XivChatType.TellIncoming:
-                            text += message.Sender + " >> " + message.Message;
+                            text += sender + " >> " + message.Message;
                             break;
                         case XivChatType.TellOutgoing:
-                            text += ">> " + message.Sender + ": " + message.Message;
+                            text += ">> " + sender + ": " + message.Message;
                             break;
                         case XivChatType.FreeCompany:
-                            text += "[FC]" + message.Sender + ": " + message.Message;
+                            text += "[FC]" + sender + ": " + message.Message;
                             break;
                         case XivChatType.NoviceNetwork:
-                            text += "[NN]" + message.Sender + ": " + message.Message;
+                            text += "[NN]" + sender + ": " + message.Message;
                             break;
                         case XivChatType.CrossLinkShell1:
-                            text += "[CWLS1]" + message.Sender + ": " + message.Message;
+                            text += "[CWLS1]" + sender + ": " + message.Message;
                             break;
                         case XivChatType.CrossLinkShell2:
-                            text += "[CWLS2]" + message.Sender + ": " + message.Message;
+                            text += "[CWLS2]" + sender + ": " + message.Message;
                             break;
                         case XivChatType.CrossLinkShell3:
-                            text += "[CWLS3]" + message.Sender + ": " + message.Message;
+                            text += "[CWLS3]" + sender + ": " + message.Message;
                             break;
                         case XivChatType.CrossLinkShell4:
-                            text += "[CWLS4]" + message.Sender + ": " + message.Message;
+                            text += "[CWLS4]" + sender + ": " + message.Message;
                             break;
                         case XivChatType.CrossLinkShell5:
-                            text += "[CWLS5]" + message.Sender + ": " + message.Message;
+                            text += "[CWLS5]" + sender + ": " + message.Message;
                             break;
                         case XivChatType.CrossLinkShell6:
-                            text += "[CWLS6]" + message.Sender + ": " + message.Message;
+                            text += "[CWLS6]" + sender + ": " + message.Message;
                             break;
                         case XivChatType.CrossLinkShell7:
-                            text += "[CWLS7]" + message.Sender + ": " + message.Message;
+                            text += "[CWLS7]" + sender + ": " + message.Message;
                             break;
                         case XivChatType.CrossLinkShell8:
-                            text += "[CWLS8]" + message.Sender + ": " + message.Message;
+                            text += "[CWLS8]" + sender + ": " + message.Message;
                             break;
                         case XivChatType.Ls1:
-                            text += "[LS1]" + message.Sender + ": " + message.Message;
+                            text += "[LS1]" + sender + ": " + message.Message;
                             break;
                         case XivChatType.Ls2:
-                            text += "[LS2]" + message.Sender + ": " + message.Message;
+                            text += "[LS2]" + sender + ": " + message.Message;
                             break;
                         case XivChatType.Ls3:
-                            text += "[LS3]" + message.Sender + ": " + message.Message;
+                            text += "[LS3]" + sender + ": " + message.Message;
                             break;
                         case XivChatType.Ls4:
-                            text += "[LS4]" + message.Sender + ": " + message.Message;
+                            text += "[LS4]" + sender + ": " + message.Message;
                             break;
                         case XivChatType.Ls5:
-                            text += "[LS5]" + message.Sender + ": " + message.Message;
+                            text += "[LS5]" + sender + ": " + message.Message;
                             break;
                         case XivChatType.Ls6:
-                            text += "[LS6]" + message.Sender + ": " + message.Message;
+                            text += "[LS6]" + sender + ": " + message.Message;
                             break;
                         case XivChatType.Ls7:
-                            text += "[LS7]" + message.Sender + ": " + message.Message;
+                            text += "[LS7]" + sender + ": " + message.Message;
                             break;
                         case XivChatType.Ls8:
-                            text += "[LS8]" + message.Sender + ": " + message.Message;
+                            text += "[LS8]" + sender + ": " + message.Message;
                             break;
                         case XivChatType.PvPTeam:
-                            text += "[PvP]" + message.Sender + ": " + message.Message;
+                            text += "[PvP]" + sender + ": " + message.Message;
+                            break;
+                        case XivChatType.Say:
+                        case XivChatType.Shout:
+                        case XivChatType.Yell:
+                        case XivChatType.Party:
+                        case XivChatType.CrossParty:
+                        case XivChatType.Alliance:
+                            text += sender + ": " + message.Message;
                             break;
                         default:
-                            text += message.Sender + ": " + message.Message;
+                            text += message.Message;
                             break;
                     }
 
@@ -361,6 +574,65 @@ namespace XIVLogger
 
             return result;
         }
+
+        public void setupAutosave()
+        {
+            config.autoFileName = getTimeStamp() + " ";
+        }
+
+        public void setupAutosave(string characterName)
+        {
+            config.autoFileName = getTimeStamp() + " " + characterName;
+        }
+        public void autoSave()
+        {
+            if (config.fAutosave)
+            {
+                List<String> printedLog;
+
+                printedLog = prepareLog(aLastN: 0, aTimestamp: config.fTimestamp);
+
+                string folder;
+
+                if (!checkValidPath(config.autoFilePath))
+                {
+                    folder = Environment.GetFolderPath(Environment.SpecialFolder.MyDocuments);
+                }
+                else
+                {
+                    folder = config.autoFilePath;
+                }
+
+                string path = folder + @"\" + config.autoFileName + ".txt";
+
+                //int count = 0;
+
+                //while (File.Exists(path))
+                //{
+                //    count++;
+                //    path = folder + @"\" + name + count + ".txt";
+
+                //}
+
+                using (System.IO.StreamWriter file = new System.IO.StreamWriter(path, false))
+                {
+                    file.WriteLine("Autosave");
+
+                    foreach (string message in printedLog)
+                    {
+                        file.WriteLine(message);
+                    }
+
+                }
+
+                this.chat.PrintChat(new XivChatEntry
+                {
+                    Message = "Autosaved chat log to " + path + ".",
+                    Type = XivChatType.Echo
+                });
+            }
+        }
+
     }
 
     public class ChatMessage

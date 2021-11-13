@@ -1,8 +1,10 @@
 ﻿using Dalamud.Game.Text;
+using Dalamud.Plugin;
 using ImGuiNET;
 using System;
 using System.Collections.Generic;
 using System.Numerics;
+using System.Text;
 
 namespace XIVLogger
 {
@@ -12,20 +14,15 @@ namespace XIVLogger
     {
         private Configuration configuration;
 
-        // this extra bool exists for ImGui, since you can't ref a property
-        private bool visible = false;
-        public bool Visible
-        {
-            get { return this.visible; }
-            set { this.visible = value; }
-        }
-
         private bool settingsVisible = false;
         public bool SettingsVisible
         {
             get { return this.settingsVisible; }
             set { this.settingsVisible = value; }
         }
+
+        private bool rpAidVisible = false;
+        public bool RpAidVisible { get => rpAidVisible; set => rpAidVisible = value; }
 
         private bool logConfirmMessage = false;
         public bool LogConfirmMessage
@@ -41,10 +38,19 @@ namespace XIVLogger
             set { this.copyConfirmMessage = value; }
         }
 
+        private bool showIndividualConfig = false;
+        public bool ShowIndividualConfig { get => showIndividualConfig; set => showIndividualConfig = value; }
+        public ChatConfig SelectedConfig { get => selectedConfig; set => selectedConfig = value; }
+
+
+        private ChatConfig selectedConfig;
+
 
         public string latestLogTime = "";
 
         public ChatLog log;
+
+        private int chatIndex = 0;
 
         public PluginUI(Configuration configuration)
         {
@@ -53,6 +59,7 @@ namespace XIVLogger
 
         public void Dispose()
         {
+
         }
 
         public void Draw()
@@ -64,40 +71,61 @@ namespace XIVLogger
             // There are other ways to do this, but it is generally best to keep the number of
             // draw delegates as low as possible.
 
-            DrawMainWindow();
             DrawSettingsWindow();
+            drawNewConfig();
+            DrawRPAidWindow();
         }
 
-        public void DrawMainWindow()
+        public void DrawRPAidWindow()
         {
-            if (!Visible)
+            if (!RpAidVisible)
             {
                 return;
             }
 
-            ImGui.SetNextWindowSize(new Vector2(375, 330), ImGuiCond.FirstUseEver);
-            ImGui.SetNextWindowSizeConstraints(new Vector2(375, 330), new Vector2(float.MaxValue, float.MaxValue));
-            if (ImGui.Begin("My Amazing Window", ref this.visible, ImGuiWindowFlags.NoScrollbar | ImGuiWindowFlags.NoScrollWithMouse))
+            ImGui.SetNextWindowSize(new Vector2(500, 400));
+            if (ImGui.Begin("RP Aid", ref this.rpAidVisible))
             {
-          
-                if (ImGui.Button("Show Settings"))
+                if (ImGui.InputTextMultiline(string.Empty, ref configuration.RPAidLog, 1024 * 4196, new Vector2(400, 230)))
+                    { }
+
+                ImGui.Text($"{configuration.RPAidLog.Length} / 500");
+
+                ImGui.Text($"{showSelectedText()}");
+
+
+                if (ImGui.Button("<"))
                 {
-                    SettingsVisible = true;
+                    if (chatIndex > 0)
+                    {
+                        chatIndex--;
+                    }
                 }
 
-                if (ImGui.Button("Print Log"))
+                ImGui.SameLine();
+
+                if (ImGui.Button(">"))
                 {
-                    latestLogTime = log.printLog("");
-                    LogConfirmMessage = true;
+                    if (chatIndex > Math.Ceiling((decimal)(configuration.RPAidLog.Length/500)))
+                    {
+                        chatIndex = (int)Math.Ceiling((decimal)(configuration.RPAidLog.Length / 500));
+                    }
+                    else
+                    {
+                        chatIndex++;
+                    }
                 }
 
-                if (LogConfirmMessage)
-                {
-                    ImGui.Text($"Log saved at {latestLogTime}");
-                }
 
             }
-            ImGui.End();
+
+        }
+
+        public string showSelectedText()
+        {
+            string text = configuration.RPAidLog.Replace(System.Environment.NewLine, " ");
+
+            return text?[(chatIndex * 500)..Math.Min((500 * (chatIndex + 1)), text.Length)];
         }
 
         public void DrawSettingsWindow()
@@ -107,7 +135,7 @@ namespace XIVLogger
                 return;
             }
 
-            ImGui.SetNextWindowSize(new Vector2(375, 330));
+            ImGui.SetNextWindowSize(new Vector2(500, 330));
 
             if (ImGui.Begin("XIV Logger Configuration", ref this.settingsVisible))
             {
@@ -117,6 +145,7 @@ namespace XIVLogger
                     latestLogTime = log.printLog("");
                     LogConfirmMessage = true;
                     CopyConfirmMessage = false;
+                    configuration.Save();
                 }
 
                 ImGui.SameLine();
@@ -127,7 +156,15 @@ namespace XIVLogger
                     ImGui.SetClipboardText(clip);
                     CopyConfirmMessage = true;
                     LogConfirmMessage = false;
+                    configuration.Save();
                 }
+
+                // RP Aid button is coming soon
+                //ImGui.SameLine();
+                //if (ImGui.Button("Text Editor"))
+                //{
+                //    RpAidVisible = true;
+                //}
 
                 if (LogConfirmMessage)
                 {
@@ -156,28 +193,255 @@ namespace XIVLogger
                     if (ImGui.BeginTabItem("Chat Types"))
                     {
 
-                        foreach (KeyValuePair<int, string> entry in configuration.PossibleChatTypes)
+                        ImGui.Text("Default configuration settings");
+
+                        if (ImGui.BeginTable("configlist", 3, ImGuiTableFlags.BordersInnerH))
                         {
-                            bool enabled = configuration.EnabledChatTypes[entry.Key];
-                            if (ImGui.Checkbox($"{entry.Value}", ref enabled))
+
+                            foreach (KeyValuePair<int, string> entry in configuration.PossibleChatTypes)
                             {
-                                configuration.EnabledChatTypes[entry.Key] = enabled;
-                                this.configuration.Save();
+                                ImGui.TableNextRow();
+                                ImGui.TableNextColumn();
+
+                                bool enabled = configuration.defaultConfig.TypeConfig[entry.Key];
+                                if (ImGui.Checkbox($"{entry.Value}", ref enabled))
+                                {
+                                    configuration.defaultConfig.TypeConfig[entry.Key] = enabled;
+                                    this.configuration.Save();
+                                }
+
                             }
 
+                            ImGui.EndTable();
                         }
+
+                        ImGui.EndTabItem();
+                    }
+
+                    if (ImGui.BeginTabItem("Advanced Settings"))
+                    {
+
+                        ImGui.Text("Set up additional configurations with different combinations of chat types here.");
+
+                        ImGui.Spacing();
+
+                        if (ImGui.BeginTable("configlist", 4, ImGuiTableFlags.BordersInner))
+                        {
+                            ImGui.TableNextRow();
+
+                            ImGui.TableNextColumn();
+
+                            ImGui.Text("Active?");
+
+                            ImGui.TableNextColumn();
+
+                            ImGui.Text("Configuration Name");
+
+                            ImGui.TableNextColumn();
+
+                            ImGui.Text("Edit");
+
+                            ImGui.TableNextColumn();
+
+                            ImGui.Text("Remove");
+
+                            ImGui.TableNextRow();
+
+                            {
+                                ImGui.TableNextColumn();
+                                if (ImGui.Button((configuration.defaultConfig.IsActive ? "@##active_default" : "##active_default"), new Vector2(20, 20)))
+                                {
+                                    configuration.setActiveConfig(configuration.defaultConfig);
+
+                                }
+                            }
+
+                            {
+                                ImGui.TableNextColumn();
+                                ImGui.Text($"{configuration.defaultConfig.Name}");
+                            }
+
+                            // list
+                            var index = 0;
+
+                            foreach (ChatConfig config in configuration.configList.ToArray())
+                            {
+                                index++;
+
+                                string id = config.Name + index; 
+
+                                ImGui.TableNextRow();
+
+                                {
+                                    ImGui.TableNextColumn();
+                                    if (ImGui.Button((config.IsActive ? "@##active_" + id : "##active_" + id), new Vector2(20, 20)))
+                                    {
+                                        configuration.setActiveConfig(config);
+
+                                    }
+                                }
+
+                                {
+                                    ImGui.TableNextColumn();
+                                    ImGui.Text($"{config.Name}");
+                                }
+
+
+                                {
+                                    ImGui.TableNextColumn();
+                                    if (ImGui.Button("Edit##" + id))
+                                    {
+                                        selectedConfig = config;
+                                        showIndividualConfig = true;
+                                    }
+                                }
+
+                                {
+                                    ImGui.TableNextColumn();
+                                    if (ImGui.Button("Remove##" + id))
+                                    {
+                                        configuration.removeConfig(config);
+                                        showIndividualConfig = false;
+                                    }
+                                }
+                            }
+
+                            ImGui.TableNextRow();
+
+                            ImGui.TableNextColumn();
+
+                            if (ImGui.Button("+"))
+                            {
+                                configuration.addNewConfig("New Config");
+                            }
+
+                            ImGui.EndTable();
+
+                        }
+
                         ImGui.EndTabItem();
                     }
 
                     ImGui.EndTabBar();
                 }
 
+                if (ImGui.Button("Save"))
+                {
+                    configuration.Save();
+                }
+
             }
             ImGui.End();
         }
 
+        private void drawNewConfig()
+        {
+            if (!showIndividualConfig)
+            {
+                return;
+            }
+
+            ImGui.SetNextWindowSize(new Vector2(500, 330));
+
+            if (ImGui.Begin("Edit Individual Config", ref this.showIndividualConfig))
+            {
+                if (ImGui.Button("Set as Active Chat Configuration"))
+                {
+                    configuration.setActiveConfig(selectedConfig);
+                }
+
+                ImGui.Text("Config Name:");
+                ImGui.SameLine();
+                ImGui.InputText("##confname", ref selectedConfig.name, 256);
+                ImGui.Spacing();
+
+                if (ImGui.BeginTabBar("##indie tabs"))
+                {
+                    if (ImGui.BeginTabItem("Chat Config"))
+                    {
+                        foreach (KeyValuePair<int, string> entry in configuration.PossibleChatTypes)
+                        {
+                            bool enabled = selectedConfig.TypeConfig[entry.Key];
+                            if (ImGui.Checkbox($"{entry.Value}", ref enabled))
+                            {
+                                selectedConfig.TypeConfig[entry.Key] = enabled;
+                                configuration.Save();
+                            }
+
+                        }
+                        ImGui.EndTabItem();
+                    }
+
+                    // Currently unimplemented, name replacements is half working
+
+                    //if (ImGui.BeginTabItem("Name Config"))
+                    //{
+                    //    nameTab();
+                    //    ImGui.EndTabItem();
+                    //}
+                }
+            }
+
+        }
+
+        private void nameTab()
+        {
+            ImGui.Spacing();
+
+            if (ImGui.BeginTable("configlist", 4, ImGuiTableFlags.BordersInner))
+            {
+
+                ImGui.TableNextRow();
+                ImGui.TableNextColumn();
+                ImGui.TableNextColumn();
+                ImGui.Text($"Name");
+                ImGui.TableNextColumn();
+                ImGui.Text($"Replacement");
+                ImGui.TableNextColumn();
+
+                foreach (KeyValuePair<string, string> entry in selectedConfig.NameReplacements)
+                {
+                    ImGui.TableNextRow();
+                    ImGui.TableNextColumn();
+                    ImGui.TableNextColumn();
+                    ImGui.Text($"{entry.Key}");
+                    ImGui.TableNextColumn();
+                    ImGui.Text($"{entry.Value}");
+                    ImGui.TableNextColumn();
+                    if (ImGui.Button("Remove##" + entry.Key))
+                    {
+                        selectedConfig.removeNameReplacement(entry.Key);
+                    }
+                }
+
+                ImGui.TableNextRow();
+
+
+                ImGui.TableNextColumn();
+
+                if (ImGui.Button("+"))
+                {
+                    if (!String.IsNullOrWhiteSpace(configuration.tempFirstName) && !String.IsNullOrWhiteSpace(configuration.tempSecondName))
+                    {
+                        selectedConfig.addNameReplacement(configuration.tempFirstName, configuration.tempSecondName);
+                        configuration.tempFirstName = string.Empty;
+                        configuration.tempSecondName = string.Empty;
+                    }
+                    
+                }
+                ImGui.TableNextColumn();
+                ImGui.InputText("##nameone", ref configuration.tempFirstName, 256);
+                ImGui.TableNextColumn();
+                ImGui.InputText("##nametwo", ref configuration.tempSecondName, 256);
+                ImGui.TableNextColumn();
+
+                ImGui.EndTable();
+                }
+        }
+
         private void firstTab()
         {
+
             ImGui.Spacing();
 
             ImGui.Text("File Name:");
@@ -195,6 +459,67 @@ namespace XIVLogger
             {
                 this.configuration.Save();
             }
+
+            if (ImGui.Checkbox("Autosave", ref configuration.fAutosave))
+            {
+                log.setupAutosave();
+                log.autoSave();
+                configuration.updateAutosaveTime();
+                configuration.Save();
+            }
+
+            ImGui.Text("Every ");
+            ImGui.SameLine();
+            ImGui.InputInt("##autosavemin", ref configuration.fAutoMin, 64);
+            ImGui.SameLine();
+            ImGui.Text(" minutes");
+
+            ImGui.Text("Autosave File Path:");
+            ImGui.SameLine();
+            ImGui.InputText("##autofilepath", ref configuration.autoFilePath, 256);
+
+        }
+
+        public void Wrap(string input)
+        {
+            input = input.Replace("\n", " XXX ");
+
+            string[] inputArray = input.Split(' ');
+
+            int count = 0;
+            foreach (string splits in inputArray)
+            {
+                bool newline = false;
+                if (ImGui.GetContentRegionAvail().X - 5 - ImGui.CalcTextSize(splits).X < 0)
+                { ImGui.Text(""); }
+
+                if (splits == "XXX")
+                {
+                    newline = true;
+                }
+                else
+                {
+                    ImGui.Text(splits.Trim());
+                }
+
+                if (count < (inputArray.Length - 1))
+                {
+                    if (!newline)
+                    { ImGui.SameLine(); }
+                    count++;
+                }
+            }
+        }
+
+        public static string StripPunctuation(string s)
+        {
+            var sb = new StringBuilder();
+            foreach (char c in s)
+            {
+                if (!char.IsPunctuation(c))
+                    sb.Append(c);
+            }
+            return sb.ToString();
         }
 
     }
