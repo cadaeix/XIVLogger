@@ -29,4 +29,9 @@
 			<Private>False</Private>
 		</Reference>
 	</ItemGroup>
+  <ItemGroup>
+    <Content Include="..\Assets\icon.png" Link="images\icon.png">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </Content>
+  </ItemGroup>
 </Project>

@@ -3,8 +3,10 @@
   "Name": "XIVLogger",
   "InternalName": "XIVLogger",
   "AssemblyVersion": "1.0.3.1",
+  "Punchline": "Save chat logs to your computer as text files or copy them!",
   "Description": "Save chat logs as text files from when this is loaded. /xivlogger for settings, /savelog to save logs, /copylogs to copy logs.",
   "ApplicableVersion": "any",
+  "IconUrl": "https://raw.githubusercontent.com/cadaeix/XIVLogger/master/Assets/icon.png",
   "RepoUrl": "https://github.com/cadaeix/XIVLogger",
   "Tags": [
     "xivlauncher",
