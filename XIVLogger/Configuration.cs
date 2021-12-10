@@ -605,15 +605,6 @@ namespace XIVLogger
 
                 string path = folder + @"\" + config.autoFileName + ".txt";
 
-                //int count = 0;
-
-                //while (File.Exists(path))
-                //{
-                //    count++;
-                //    path = folder + @"\" + name + count + ".txt";
-
-                //}
-
                 using (System.IO.StreamWriter file = new System.IO.StreamWriter(path, false))
                 {
                     file.WriteLine("Autosave");
