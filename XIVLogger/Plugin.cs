@@ -68,8 +68,6 @@ namespace XIVLogger
 
             this.framework.Update += OnUpdate;
 
-            // To do: if autosave file exists, start new autosave file to avoid overwriting previous session
-
         }
 
         private void OnLogin(object sender, EventArgs e)
@@ -123,7 +121,6 @@ namespace XIVLogger
             commandManager.RemoveHandler(commandName);
             commandManager.RemoveHandler("/savelog");
             commandManager.RemoveHandler("/copylog");
-            PluginInterface.Dispose();
             
             this.framework.Update -= OnUpdate;
             Chat.ChatMessage -= OnChatMessage;
