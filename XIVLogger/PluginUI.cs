@@ -21,8 +21,8 @@ namespace XIVLogger
             set { this.settingsVisible = value; }
         }
 
-        private bool rpAidVisible = false;
-        public bool RpAidVisible { get => rpAidVisible; set => rpAidVisible = value; }
+        //private bool rpAidVisible = false;
+        //public bool RpAidVisible { get => rpAidVisible; set => rpAidVisible = value; }
 
         private bool logConfirmMessage = false;
         public bool LogConfirmMessage
@@ -66,53 +66,53 @@ namespace XIVLogger
         {
             DrawSettingsWindow();
             drawNewConfig();
-            DrawRPAidWindow();
+            //DrawRPAidWindow();
         }
 
-        public void DrawRPAidWindow()
-        {
-            if (!RpAidVisible)
-            {
-                return;
-            }
+        //public void DrawRPAidWindow()
+        //{
+        //    if (!RpAidVisible)
+        //    {
+        //        return;
+        //    }
 
-            ImGui.SetNextWindowSize(new Vector2(500, 400));
-            if (ImGui.Begin("RP Aid", ref this.rpAidVisible))
-            {
-                if (ImGui.InputTextMultiline(string.Empty, ref configuration.RPAidLog, 1024 * 4196, new Vector2(400, 230)))
-                    { }
+        //    ImGui.SetNextWindowSize(new Vector2(500, 400));
+        //    if (ImGui.Begin("RP Aid", ref this.rpAidVisible))
+        //    {
+        //        if (ImGui.InputTextMultiline(string.Empty, ref configuration.RPAidLog, 1024 * 4196, new Vector2(400, 230)))
+        //            { }
 
-                ImGui.Text($"{configuration.RPAidLog.Length} / 500");
+        //        ImGui.Text($"{configuration.RPAidLog.Length} / 500");
 
-                ImGui.Text($"{showSelectedText()}");
-
-
-                if (ImGui.Button("<"))
-                {
-                    if (chatIndex > 0)
-                    {
-                        chatIndex--;
-                    }
-                }
-
-                ImGui.SameLine();
-
-                if (ImGui.Button(">"))
-                {
-                    if (chatIndex > Math.Ceiling((decimal)(configuration.RPAidLog.Length/500)))
-                    {
-                        chatIndex = (int)Math.Ceiling((decimal)(configuration.RPAidLog.Length / 500));
-                    }
-                    else
-                    {
-                        chatIndex++;
-                    }
-                }
+        //        ImGui.Text($"{showSelectedText()}");
 
 
-            }
+        //        if (ImGui.Button("<"))
+        //        {
+        //            if (chatIndex > 0)
+        //            {
+        //                chatIndex--;
+        //            }
+        //        }
 
-        }
+        //        ImGui.SameLine();
+
+        //        if (ImGui.Button(">"))
+        //        {
+        //            if (chatIndex > Math.Ceiling((decimal)(configuration.RPAidLog.Length/500)))
+        //            {
+        //                chatIndex = (int)Math.Ceiling((decimal)(configuration.RPAidLog.Length / 500));
+        //            }
+        //            else
+        //            {
+        //                chatIndex++;
+        //            }
+        //        }
+
+
+        //    }
+
+        //}
 
         public string showSelectedText()
         {
@@ -471,49 +471,13 @@ namespace XIVLogger
             ImGui.SameLine();
             ImGui.InputText("##autofilepath", ref configuration.autoFilePath, 256);
 
-        }
-
-        public void Wrap(string input)
-        {
-            input = input.Replace("\n", " XXX ");
-
-            string[] inputArray = input.Split(' ');
-
-            int count = 0;
-            foreach (string splits in inputArray)
+            if (ImGui.Checkbox("Autosave notification echoed in chat?", ref configuration.fAutosaveNotif))
             {
-                bool newline = false;
-                if (ImGui.GetContentRegionAvail().X - 5 - ImGui.CalcTextSize(splits).X < 0)
-                { ImGui.Text(""); }
-
-                if (splits == "XXX")
-                {
-                    newline = true;
-                }
-                else
-                {
-                    ImGui.Text(splits.Trim());
-                }
-
-                if (count < (inputArray.Length - 1))
-                {
-                    if (!newline)
-                    { ImGui.SameLine(); }
-                    count++;
-                }
+                configuration.Save();
             }
+
         }
 
-        public static string StripPunctuation(string s)
-        {
-            var sb = new StringBuilder();
-            foreach (char c in s)
-            {
-                if (!char.IsPunctuation(c))
-                    sb.Append(c);
-            }
-            return sb.ToString();
-        }
 
     }
 }

@@ -35,6 +35,8 @@ namespace XIVLogger
 
         public bool fAutosave = false;
 
+        public bool fAutosaveNotif = true;
+
         public DateTime lastAutosave;
 
         public int fAutoMin = 5;
@@ -69,6 +71,7 @@ namespace XIVLogger
                     { (int) XivChatType.TellOutgoing, "Tell Outgoing" },
                     { (int) XivChatType.CustomEmote, "Custom Emotes" },
                     { (int) XivChatType.StandardEmote, "Standard Emotes" },
+                    { 2122, "/random" },
                     { (int) XivChatType.CrossLinkShell1, "Cross Link Shell 1" },
                     { (int) XivChatType.CrossLinkShell2, "Cross Link Shell 2" },
                     { (int) XivChatType.CrossLinkShell3, "Cross Link Shell 3" },
@@ -197,6 +200,7 @@ namespace XIVLogger
                     { (int) XivChatType.TellOutgoing, true },
                     { (int) XivChatType.CustomEmote, true },
                     { (int) XivChatType.StandardEmote, true },
+                    { 2122, true },
                     { (int) XivChatType.CrossLinkShell1, false },
                     { (int) XivChatType.CrossLinkShell2, false },
                     { (int) XivChatType.CrossLinkShell3, false },
@@ -243,6 +247,7 @@ namespace XIVLogger
                     { (int) XivChatType.TellOutgoing, true },
                     { (int) XivChatType.CustomEmote, true },
                     { (int) XivChatType.StandardEmote, true },
+                    { 2122, true },
                     { (int) XivChatType.CrossLinkShell1, false },
                     { (int) XivChatType.CrossLinkShell2, false },
                     { (int) XivChatType.CrossLinkShell3, false },
@@ -616,11 +621,15 @@ namespace XIVLogger
 
                 }
 
-                this.chat.PrintChat(new XivChatEntry
+                if(config.fAutosaveNotif)
                 {
-                    Message = "Autosaved chat log to " + path + ".",
-                    Type = XivChatType.Echo
-                });
+                    this.chat.PrintChat(new XivChatEntry
+                    {
+                        Message = "Autosaved chat log to " + path + ".",
+                        Type = XivChatType.Echo
+                    });
+                }
+
             }
         }
 
