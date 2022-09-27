@@ -610,15 +610,12 @@ namespace XIVLogger
 
                 string path = folder + @"\" + config.autoFileName + ".txt";
 
-                using (System.IO.StreamWriter file = new System.IO.StreamWriter(path, false))
+                using (System.IO.StreamWriter file = new System.IO.StreamWriter(path, true))
                 {
-                    file.WriteLine("Autosave");
-
                     foreach (string message in printedLog)
                     {
                         file.WriteLine(message);
                     }
-
                 }
 
                 if(config.fAutosaveNotif)
