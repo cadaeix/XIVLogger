@@ -453,6 +453,11 @@ namespace XIVLogger
                 this.configuration.Save();
             }
 
+            if (ImGui.Checkbox("Include Datestamp", ref configuration.fDatestamp))
+            {
+                this.configuration.Save();
+            }
+
             if (ImGui.Checkbox("Autosave", ref configuration.fAutosave))
             {
                 log.setupAutosave();
