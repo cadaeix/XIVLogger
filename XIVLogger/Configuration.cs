@@ -1,4 +1,4 @@
-﻿using Dalamud.Configuration;
+using Dalamud.Configuration;
 using Dalamud.Game.Text;
 using Dalamud.Plugin;
 using System;
@@ -32,6 +32,8 @@ namespace XIVLogger
         public string fileName = string.Empty;
 
         public bool fTimestamp = false;
+
+        public bool fDatestamp = false;
 
         public bool fAutosave = false;
 
@@ -373,7 +375,7 @@ namespace XIVLogger
                 Int32.TryParse(args, out lastN);
             }
 
-            printedLog = prepareLog(aLastN: lastN, aTimestamp: config.fTimestamp);
+            printedLog = prepareLog(aLastN: lastN, aTimestamp: config.fTimestamp, aDatestamp: config.fDatestamp);
 
             if (aClipboard)
             {
@@ -460,7 +462,7 @@ namespace XIVLogger
 
         }
 
-        private List<string> prepareLog(int aLastN = 0, bool aTimestamp = false)
+        private List<string> prepareLog(int aLastN = 0, bool aTimestamp = false, bool aDatestamp = false)
         {
             ChatConfig activeConfig = config.activeConfig;
 
@@ -479,9 +481,19 @@ namespace XIVLogger
                         sender = activeConfig.NameReplacements[sender];
                     }
 
+                    if (aDatestamp)
+                    {
+                        text += $"{message.Timestamp:yyyy}-{message.Timestamp:MM}-{message.Timestamp:dd} ";
+                    }
+
                     if (aTimestamp)
                     {
-                        text += $"[{message.Timestamp:t}] ";
+                        text += $"{message.Timestamp:t}";
+                    }
+
+                    if (!String.IsNullOrEmpty(text))
+                    {
+                        text = $"[{text}] ";
                     }
 
                     switch (message.Type)
@@ -595,7 +607,7 @@ namespace XIVLogger
             {
                 List<String> printedLog;
 
-                printedLog = prepareLog(aLastN: 0, aTimestamp: config.fTimestamp);
+                printedLog = prepareLog(aLastN: 0, aTimestamp: config.fTimestamp, aDatestamp: config.fDatestamp);
 
                 string folder;
 

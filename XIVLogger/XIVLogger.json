@@ -2,7 +2,7 @@
   "Author": "Cadaeix",
   "Name": "XIVLogger",
   "InternalName": "XIVLogger",
-  "AssemblyVersion": "1.0.4.2",
+  "AssemblyVersion": "1.0.5.0",
   "Punchline": "Save chat logs to your computer as text files or copy them!",
   "Description": "Save chat logs as text files from when this is loaded. /xivlogger for settings, /savelog to save logs, /copylogs to copy logs.",
   "ApplicableVersion": "any",
@@ -14,6 +14,6 @@
     "chat",
     "chat log"
   ],
-  "DalamudApiLevel": 7,
+  "DalamudApiLevel": 8,
   "LoadPriority": 0
 }
