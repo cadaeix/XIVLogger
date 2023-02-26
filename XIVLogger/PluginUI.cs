@@ -468,7 +468,7 @@ namespace XIVLogger
             ImGui.InputInt("##autosavemin", ref currentAutoMin, 64);
             if (currentAutoMin != configuration.fAutoMin)
             {
-                configuration.fAutoMin = Math.Clamp(currentAutoMin, 0, int.MaxValue);
+                configuration.fAutoMin = Math.Clamp(currentAutoMin, 1, int.MaxValue);
                 configuration.Save();
             }
             
