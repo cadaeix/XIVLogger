@@ -463,7 +463,15 @@ namespace XIVLogger
 
             ImGui.Text("Every ");
             ImGui.SameLine();
-            ImGui.InputInt("##autosavemin", ref configuration.fAutoMin, 64);
+            
+            var currentAutoMin = configuration.fAutoMin;
+            ImGui.InputInt("##autosavemin", ref currentAutoMin, 64);
+            if (currentAutoMin != configuration.fAutoMin)
+            {
+                configuration.fAutoMin = Math.Clamp(currentAutoMin, 1, int.MaxValue);
+                configuration.Save();
+            }
+            
             ImGui.SameLine();
             ImGui.Text(" minutes");
 
